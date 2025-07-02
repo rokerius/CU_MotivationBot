@@ -1,0 +1,10 @@
+services:
+  telegram-bot:
+    build:
+      context: ./tg_bot
+      dockerfile: Dockerfile
+    container_name: telegram-bot
+    restart: always
+    environment:
+      - TOKEN=${TOKEN}
+    command: python bot.py
