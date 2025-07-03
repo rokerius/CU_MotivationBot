@@ -5,6 +5,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile
 from . import keyboards
+from .database.db import db
 
 router = Router()
 path = "" # заглушка (пример с отправкой фоток)
@@ -24,6 +25,8 @@ class Reg(StatesGroup):
 
 @router.message(Command('start'))
 async def start(message: Message):
+    user = message.from_user
+    await db.add_user(user.id, user.username, user.first_name, user.last_name)
     await message.answer('Привет! Я помогу тебе учиться и разбираться в нужных темах.'
                          'Выбери интересующую главу, и я пришлю подтемы для изучения.', reply_markup=keyboards.modules)
 
@@ -32,6 +35,16 @@ async def start(message: Message):
 async def start(message: Message):
     await message.answer('/help - список всех команд\n'
                          '/start - приветственное сообщение\n')
+
+
+@router.message(Command('data'))
+async def start(message: Message):
+    await message.answer('Мы храним следующую информацию о тебе:\n')
+    user = await db.get_user_by_id(message.from_user.id)
+    if user:
+        await message.answer(f"User found: {user}")
+    else:
+        await message.answer("No data for user")
 
 
 @router.message(Command('weather'))

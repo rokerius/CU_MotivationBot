@@ -7,4 +7,35 @@ services:
     restart: always
     environment:
       - TOKEN=${TOKEN}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${PG_DATABASE}
+      - DB_USER=${PG_USER}
+      - DB_PASSWORD=${PG_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
     command: python bot.py
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${PG_DATABASE}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DATABASE}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  postgres_data:

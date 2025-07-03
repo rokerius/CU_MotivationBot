@@ -2,23 +2,16 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 modules = InlineKeyboardMarkup(inline_keyboard=[
-    [
-        InlineKeyboardButton(text='Модуль 1: Формат обучения и роли', callback_data='module_1'),
-        InlineKeyboardButton(text='Модуль 2: Постановка целей', callback_data='module_2')
-    ],
-    [
-        InlineKeyboardButton(text='Модуль 3: Тайм-менеджмент', callback_data='module_3'),
-        InlineKeyboardButton(text='Модуль 4: Мотивация', callback_data='module_4')
-    ],
-    [
-        InlineKeyboardButton(text='Модуль 5: Эффективные методы обучения', callback_data='module_5'),
-        InlineKeyboardButton(text='Модуль 6: Страх ошибок', callback_data='module_6')
-    ],
-    [
-        InlineKeyboardButton(text='Модуль 7: Командная работа', callback_data='module_7'),
-        InlineKeyboardButton(text='Модуль 8: Рефлексия и саморазвитие', callback_data='module_8')
-    ]
+    [InlineKeyboardButton(text='1. Формат и роли', callback_data='module_1')],
+    [InlineKeyboardButton(text='2. Цели', callback_data='module_2')],
+    [InlineKeyboardButton(text='3. Тайм-менеджмент', callback_data='module_3')],
+    [InlineKeyboardButton(text='4. Мотивация', callback_data='module_4')],
+    [InlineKeyboardButton(text='5. Методы обучения', callback_data='module_5')],
+    [InlineKeyboardButton(text='6. Страх ошибок', callback_data='module_6')],
+    [InlineKeyboardButton(text='7. Команда', callback_data='module_7')],
+    [InlineKeyboardButton(text='8. Рефлексия', callback_data='module_8')]
 ])
+
 
 
 time = InlineKeyboardMarkup(inline_keyboard=[
