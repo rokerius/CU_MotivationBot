@@ -1,5 +1,8 @@
 import asyncpg
 import os
+import logging
+import csv
+
 
 class Database:
     def __init__(self):
@@ -16,6 +19,30 @@ class Database:
 
     async def disconnect(self):
         await self.pool.close()
+
+    async def import_csv_to_posts_db(self, csv_file_path: str):
+        with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                user_id = int(row['user_id'])
+                module = int(row['module'])
+                theme = int(row['theme'])
+                title = row['title']
+                content = row['content']
+                await db.add_post(user_id, module, theme, title, content)
+
+    async def import_csv_to_pictures_db(self, csv_file_path: str):
+        with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                module = int(row['module'])
+                theme = int(row['theme'])
+                image_url = row['picture']
+
+                post = await db.get_post_by_module_and_theme(module, theme)
+                if not post:
+                    return
+                await db.add_image_to_post(post_id=int(post['id']), image_url=image_url)
 
     async def add_user(self, user_id: int, username: str, first_name: str, last_name: str):
         async with self.pool.acquire() as conn:
@@ -62,5 +89,23 @@ class Database:
                 INSERT INTO post_images (post_id, image_url)
                 VALUES ($1, $2)
             ''', post_id, image_url)
+
+
+    async def change_modules_done(self, user_id: int, module: int, value: str):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow('SELECT modules FROM users WHERE id = $1', user_id)
+            if not row:
+                return False
+            if value not in ["1", "2", "3"]:
+                return False
+
+            modules = list(row['modules'])
+            modules[module-1] = value
+            new_modules = ''.join(modules)
+
+            await conn.execute('UPDATE users SET modules = $1 WHERE id = $2', new_modules, user_id)
+            return True
+
+
 
 db = Database()

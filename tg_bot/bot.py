@@ -10,8 +10,12 @@ async def main():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     await db.connect()
+
     dp.include_router(router)
     try:
+        await db.import_csv_to_posts_db('data/posts.csv')
+        await db.import_csv_to_pictures_db('data/pictures.csv')
+
         await dp.start_polling(bot)
     finally:
         await db.disconnect()

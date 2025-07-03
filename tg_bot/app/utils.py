@@ -2,7 +2,6 @@ from aiogram import types
 from aiogram.types import InputMediaPhoto
 
 async def show_post_with_images(message: types.Message, module: int, theme: int, db):
-    # Получаем пост
     post = await db.get_post_by_module_and_theme(module, theme)
     if not post:
         await message.answer("Пост с таким модулем и темой не найден.")
