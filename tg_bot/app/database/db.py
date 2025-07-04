@@ -1,7 +1,7 @@
-import asyncpg
-import os
-import logging
 import csv
+import os
+
+import asyncpg
 
 
 class Database:

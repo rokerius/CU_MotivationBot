@@ -1,6 +1,9 @@
 from aiogram import types
 from aiogram.types import InputMediaPhoto
 
+from config import ADMINS
+
+
 async def show_post_with_images(message: types.Message, module: int, theme: int, db):
     post = await db.get_post_by_module_and_theme(module, theme)
     if not post:
@@ -24,3 +27,7 @@ async def show_post_with_images(message: types.Message, module: int, theme: int,
             media.append(InputMediaPhoto(media=row['image_url']))
 
     await message.answer_media_group(media=media)
+
+
+def is_admin(username: str) -> bool:
+    return username in ADMINS
