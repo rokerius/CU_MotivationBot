@@ -12,6 +12,7 @@ services:
       - DB_NAME=${PG_DATABASE}
       - DB_USER=${PG_USER}
       - DB_PASSWORD=${PG_PASSWORD}
+      - ADMINS=${ADMINS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,7 +36,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
 
 volumes:
   postgres_data:

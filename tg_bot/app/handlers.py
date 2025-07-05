@@ -1,9 +1,10 @@
-from aiogram.filters import Command
-from aiogram.types import Message, Location, CallbackQuery
 from aiogram import Router
-from aiogram.fsm.state import StatesGroup, State
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from . import keyboards
+from aiogram.fsm.state import StatesGroup, State
+from aiogram.types import Message, CallbackQuery
+
+from .keyboards import *
 from .database.db import db
 from .utils import *
 
@@ -27,12 +28,12 @@ modules_description = {
 
 
 @router.message(Command('start'))
-async def start(message: Message, state: FSMContext):
+async def start(message: Message):
     user = message.from_user
     await db.add_user(user.id, user.username, user.first_name, user.last_name)
-    kb = await keyboards.get_modules_keyboard(user.id)
+    kb = await get_modules_keyboard(user.id)
     await message.answer('Привет! Я помогу тебе учиться и разбираться в нужных темах.'
-                         'Выбери интересующую главу, и я пришлю подтемы для изучения.', reply_markup=kb)
+                         'Выбери интересующую главу, и я пришлю темы для изучения!', reply_markup=kb)
 
 
 @router.message(Command('data'))
@@ -57,19 +58,19 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     if post:
         await state.update_data(current_theme=1)
         await show_post_with_images(callback_query.message, selected_module, 1, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=keyboards.theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=keyboards.module)
+                                            reply_markup=module)
     await callback_query.answer()
     await callback_query.message.delete()
 
 
 @router.callback_query(lambda c: c.data == 'next_theme')
 async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    current_module = data.get('current_module')
-    current_theme = data.get('current_theme', 1)
+    gotten_data = await state.get_data()
+    current_module = gotten_data.get('current_module')
+    current_theme = gotten_data.get('current_theme', 1)
 
     next_theme = current_theme + 1
 
@@ -77,19 +78,19 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
     if post:
         await state.update_data(current_theme=next_theme)
         await show_post_with_images(callback_query.message, current_module, next_theme, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=keyboards.theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
     else:
         await db.change_modules_done(callback_query.from_user.id, current_module, "1")
         await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=keyboards.module)
+                                            reply_markup=module)
 
     await callback_query.message.delete()
 
 
 @router.callback_query(lambda c: c.data == 'next_module')
 async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    current_module = data.get('current_module')
+    gotten_data = await state.get_data()
+    current_module = gotten_data.get('current_module')
     next_module = current_module + 1
 
     if next_module > max(modules_description.keys()):
@@ -105,11 +106,11 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     post = await db.get_post_by_module_and_theme(next_module, 1)
     if post:
         await show_post_with_images(callback_query.message, next_module, 1, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=keyboards.theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
     else:
         await db.change_modules_done(callback_query.from_user.id, next_module - 1, "1")
         await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=keyboards.module)
+                                            reply_markup=module)
     await callback_query.message.delete()
 
 
@@ -117,7 +118,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
 @router.callback_query(lambda c: c.data == 'menu')
 async def menu(callback_query: CallbackQuery, state: FSMContext):
     user = callback_query.from_user
-    kb = await keyboards.get_modules_keyboard(user.id)
+    kb = await get_modules_keyboard(user.id)
 
     await callback_query.message.answer(
         'Выберите интересующий модуль или идите по порядку)', reply_markup=kb)
@@ -126,27 +127,35 @@ async def menu(callback_query: CallbackQuery, state: FSMContext):
     await state.clear()
 
 
-@router.message(Command("addpost"))
+# ADMIN ONLY
+@router.message(Command("add_post"))
 async def add_post_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
     try:
         _, rest = message.text.split(' ', 1)
         module, theme, title, content = rest.split('|', 3)
         title = title.strip()
         content = content.strip()
     except ValueError:
-        await message.answer("Используйте формат: /addpost Номер модуля | Номер темы | Заголовок | Содержимое")
+        await message.answer("Используйте формат: /add_post Номер модуля | Номер темы | Заголовок | Содержимое")
         return
 
     post_id = await db.add_post(user_id=message.from_user.id, module=int(module), theme=int(theme), title=title, content=content)
     await message.answer(f"Пост добавлен с id = {post_id}")
 
 
-@router.message(Command("addimage"))
+# ADMIN ONLY
+@router.message(Command("add_image"))
 async def add_image_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
     _, rest = message.text.split(' ', 1)
     parts = rest.split('|', maxsplit=2)
     if len(parts) < 3:
-        await message.answer("Используйте формат:\n/addimage номер_модуля | номер_темы | URL_картинки")
+        await message.answer("Используйте формат:\n/add_image номер_модуля | номер_темы | URL_картинки")
         return
     try:
         module = int(parts[0])
