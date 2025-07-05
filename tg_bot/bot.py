@@ -10,7 +10,9 @@ from app.config import TOKEN
 async def main():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
+
     await db.connect()
+    await db.init_db()
 
     dp.include_router(router)
     try:

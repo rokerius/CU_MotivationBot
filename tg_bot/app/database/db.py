@@ -8,6 +8,14 @@ class Database:
     def __init__(self):
         self.pool = None
 
+    async def init_db(self):
+        sql_path = os.path.join(os.path.dirname(__file__), '../../init.sql')
+        with open(sql_path, 'r', encoding='utf-8') as f:
+            sql = f.read()
+
+        async with self.pool.acquire() as conn:
+            await conn.execute(sql)
+
     async def connect(self):
         self.pool = await asyncpg.create_pool(
             user=os.getenv('DB_USER'),

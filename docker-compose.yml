@@ -1,43 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    restart: always
-    environment:
-      - POSTGRES_DB=${PG_DATABASE}
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_PASSWORD=${PG_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DATABASE}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  db-init:
-     image: postgres:15-alpine
-     depends_on:
-       - postgres
-     environment:
-       - POSTGRES_DB=${PG_DATABASE}
-       - POSTGRES_USER=${PG_USER}
-       - POSTGRES_PASSWORD=${PG_PASSWORD}
-     volumes:
-       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-     entrypoint:
-       - sh
-       - -c
-       - |
-         until pg_isready -h postgres -U ${PG_USER}; do sleep 1; done
-         export PGPASSWORD=${PG_PASSWORD}
-         psql -h postgres -U ${PG_USER} -d ${PG_DATABASE} -f /docker-entrypoint-initdb.d/init.sql
-     restart: "no"
-
-
-
   telegram-bot:
     build:
       context: ./tg_bot
@@ -55,9 +16,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
     command: python bot.py
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${PG_DATABASE}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DATABASE}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
