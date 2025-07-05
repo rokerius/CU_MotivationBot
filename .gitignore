@@ -1,4 +1,5 @@
 .env
 test.py
-posts.csv
-pictures.csv
+
+#posts.csv
+#pictures.csv
