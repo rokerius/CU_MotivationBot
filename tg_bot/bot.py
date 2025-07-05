@@ -7,9 +7,6 @@ from app.database.db import db
 from app.handlers import router
 from app.config import TOKEN
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 async def main():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
