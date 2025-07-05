@@ -7,6 +7,4 @@ COPY . /usr/src/app/
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN poetry install --no-interaction --no-ansi
-
 CMD ["python", "bot.py"]
