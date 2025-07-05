@@ -17,18 +17,6 @@ async def main():
 
     dp.include_router(router)
     try:
-        try:
-            await db.import_csv_to_posts_db('data/posts.csv')
-            logger.info("Successfully imported 'data/posts.csv'") # Логируем успешный импорт
-        except Exception as e:
-            logger.error(f"Failed to import 'data/posts.csv': {e}") # Логируем ошибку при импорте posts.csv
-
-        try:
-            await db.import_csv_to_pictures_db('data/pictures.csv')
-            logger.info("Successfully imported 'data/pictures.csv'") # Логируем успешный импорт
-        except Exception as e:
-            logger.error(f"Failed to import 'data/pictures.csv': {e}") # Логируем ошибку при импорте pictures.csv
-
         await dp.start_polling(bot)
     finally:
         await db.disconnect()
