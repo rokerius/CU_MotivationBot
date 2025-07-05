@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from database.db import db
+from .database.db import db
 
 
 async def get_modules_keyboard(id):
