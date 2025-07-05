@@ -19,7 +19,7 @@ services:
     command: python bot.py
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: postgres
     restart: always
     environment:
