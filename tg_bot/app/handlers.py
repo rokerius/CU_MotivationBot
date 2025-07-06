@@ -152,17 +152,23 @@ async def add_image_handler(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
         return
-    _, rest = message.text.split(' ', 1)
-    parts = rest.split('|', maxsplit=2)
-    if len(parts) < 3:
-        await message.answer("Используйте формат:\n/add_image номер_модуля | номер_темы | URL_картинки")
-        return
+
     try:
+        if ' ' not in message.text:
+            raise ValueError("Нет аргументов")
+
+        _, rest = message.text.split(' ', 1)
+        parts = [p.strip() for p in rest.split('|', maxsplit=2)]
+
+        if len(parts) != 3:
+            raise ValueError("Неверное количество аргументов")
+
         module = int(parts[0])
         theme = int(parts[1])
-        image_url = parts[2].strip()
-    except ValueError:
-        await message.answer("Номера модуля и темы должны быть целыми числами.")
+        image_url = parts[2]
+
+    except (ValueError, IndexError):
+        await message.answer("Используйте формат:\n/add_image номер_модуля | номер_темы | URL_картинки")
         return
 
     post = await db.get_post_by_module_and_theme(module, theme)
