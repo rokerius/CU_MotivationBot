@@ -11,6 +11,7 @@ async def main():
     bot = Bot(token=TOKEN)
     dp = Dispatcher()
     await db.connect()
+    await db.init_tables()
 
     dp.include_router(router)
     try:
