@@ -15,8 +15,8 @@ async def main():
 
     dp.include_router(router)
     try:
-        # await db.import_csv_to_posts_db('data/posts.csv')
-        # await db.import_csv_to_pictures_db('data/pictures.csv')
+        await db.import_csv_to_posts_db('data/posts.csv')
+        await db.import_csv_to_pictures_db('data/pictures.csv')
 
         await dp.start_polling(bot)
     finally:
