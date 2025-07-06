@@ -26,6 +26,7 @@ class Database:
                     first_name TEXT,
                     last_name TEXT,
                     modules TEXT,
+                    answers TEXT,
                     created_at TIMESTAMP DEFAULT now()
                 );
             ''')
@@ -48,6 +49,14 @@ class Database:
                     created_at TIMESTAMP DEFAULT NOW()
                 );
             ''')
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS module_questions (
+                    id SERIAL PRIMARY KEY,
+                    module BIGINT NOT NULL,
+                    question TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                );
+            ''')
 
     async def disconnect(self):
         await self.pool.close()
@@ -61,7 +70,8 @@ class Database:
                 theme = int(row['theme'])
                 title = row['title']
                 content = row['content']
-                await db.add_post(user_id, module, theme, title, content)
+                await self.add_post(user_id, module, theme, title, content)
+
 
     async def import_csv_to_pictures_db(self, csv_file_path: str):
         with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
@@ -71,10 +81,18 @@ class Database:
                 theme = int(row['theme'])
                 image_url = row['picture']
 
-                post = await db.get_post_by_module_and_theme(module, theme)
+                post = await self.get_post_by_module_and_theme(module, theme)
                 if not post:
                     return
-                await db.add_image_to_post(post_id=int(post['id']), image_url=image_url)
+                await self.add_image_to_post(post_id=int(post['id']), image_url=image_url)
+
+    async def import_csv_to_questions_db(self, csv_file_path: str):
+        with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                module = int(row['module'])
+                question = row['question']
+                await self.add_question(module, question)
 
     async def add_user(self, user_id: int, username: str, first_name: str, last_name: str):
         async with self.pool.acquire() as conn:
@@ -138,6 +156,35 @@ class Database:
             await conn.execute('UPDATE users SET modules = $1 WHERE id = $2', new_modules, user_id)
             return True
 
+    async def add_question(self, module: int, question: str):
+        async with self.pool.acquire() as conn:
+            await conn.execute('''
+                INSERT INTO module_questions (module, question)
+                VALUES ($1, $2)
+            ''', module, question)
+
+    async def get_question_by_module(self, module: int):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow('''
+                SELECT * FROM module_questions
+                WHERE module = $1
+                LIMIT 1
+            ''', module)
+            if row:
+                return dict(row)["question"]
+            return None
+
+    async def save_answer(self, module: int, user_id: int, answer: str):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
+            if not row:
+                return False
+
+            old_answers = row['answers'] or ""  # на случай, если answers = NULL
+            answers = old_answers + "\n" + str(module) + ") " + answer
+
+            await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
+            return True
 
 
 db = Database()

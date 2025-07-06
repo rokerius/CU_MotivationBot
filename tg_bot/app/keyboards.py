@@ -29,14 +29,14 @@ async def get_modules_keyboard(id):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-theme = InlineKeyboardMarkup(inline_keyboard=[
+theme_kb = InlineKeyboardMarkup(inline_keyboard=[
     [
         InlineKeyboardButton(text='Меню', callback_data='menu'),
         InlineKeyboardButton(text='Далее', callback_data='next_theme')
     ]
 ])
 
-module = InlineKeyboardMarkup(inline_keyboard=[
+module_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Меню', callback_data='menu')],
     [InlineKeyboardButton(text='Следующий модуль!', callback_data='next_module')]
 ])
