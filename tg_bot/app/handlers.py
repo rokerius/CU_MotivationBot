@@ -13,6 +13,7 @@ router = Router()
 class StateModule(StatesGroup):
     current_module = State()
     current_theme = State()
+    waiting_for_answer = State()
 
 modules_description = {
     1: "description 1",
@@ -58,10 +59,10 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     if post:
         await state.update_data(current_theme=1)
         await show_post_with_images(callback_query.message, selected_module, 1, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme_kb)
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=module)
+                                            reply_markup=module_kb)
     await callback_query.answer()
     await callback_query.message.delete()
 
@@ -78,11 +79,16 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
     if post:
         await state.update_data(current_theme=next_theme)
         await show_post_with_images(callback_query.message, current_module, next_theme, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme_kb)
     else:
         await db.change_modules_done(callback_query.from_user.id, current_module, "1")
-        await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=module)
+
+        question = await db.get_question_by_module(current_module)
+        if question:
+            await callback_query.message.answer(question)
+            await state.set_state(StateModule.waiting_for_answer)
+        else:
+            await callback_query.message.answer('Перейдем к следующему модулю?', reply_markup=module_kb)
 
     await callback_query.message.delete()
 
@@ -106,11 +112,11 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     post = await db.get_post_by_module_and_theme(next_module, 1)
     if post:
         await show_post_with_images(callback_query.message, next_module, 1, db)
-        await callback_query.message.answer("К следующей теме?", reply_markup=theme)
+        await callback_query.message.answer("К следующей теме?", reply_markup=theme_kb)
     else:
         await db.change_modules_done(callback_query.from_user.id, next_module - 1, "1")
         await callback_query.message.answer('Это последняя тема в этом модуле! К следующему?',
-                                            reply_markup=module)
+                                            reply_markup=module_kb)
     await callback_query.message.delete()
 
 
@@ -139,7 +145,14 @@ async def add_post_handler(message: Message):
         title = title.strip()
         content = content.strip()
     except ValueError:
-        await message.answer("Используйте формат: /add_post Номер модуля | Номер темы | Заголовок | Содержимое")
+        await message.answer("Используйте формат: /add_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
+        return
+
+    post = await db.get_post_by_module_and_theme(int(module), int(theme))
+    if post:
+        await message.answer("Пост с таким модулем и темой уже существовал, мы его заменили")
+        await show_post_with_images(message, int(module), int(theme), db)
+        await message.answer("Поста сверху больше не существует.")
         return
 
     post_id = await db.add_post(user_id=message.from_user.id, module=int(module), theme=int(theme), title=title, content=content)
@@ -152,23 +165,18 @@ async def add_image_handler(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
         return
-
     try:
         if ' ' not in message.text:
             raise ValueError("Нет аргументов")
-
         _, rest = message.text.split(' ', 1)
         parts = [p.strip() for p in rest.split('|', maxsplit=2)]
-
         if len(parts) != 3:
             raise ValueError("Неверное количество аргументов")
-
         module = int(parts[0])
         theme = int(parts[1])
         image_url = parts[2]
-
     except (ValueError, IndexError):
-        await message.answer("Используйте формат:\n/add_image номер_модуля | номер_темы | URL_картинки")
+        await message.answer("Используйте формат:\n/add_image <номер модуля> | <номер темы> | <URL картинки>")
         return
 
     post = await db.get_post_by_module_and_theme(module, theme)
@@ -178,6 +186,43 @@ async def add_image_handler(message: Message):
 
     await db.add_image_to_post(post_id=post['id'], image_url=image_url)
     await message.answer("Картинка успешно добавлена к посту.")
+
+# ADMIN ONLY
+@router.message(Command("add_question"))
+async def add_question_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    try:
+        if ' ' not in message.text:
+            raise ValueError("Нет аргументов")
+        _, rest = message.text.split(' ', 1)
+        parts = [p.strip() for p in rest.split('|', maxsplit=1)]
+        if len(parts) != 2:
+            raise ValueError("Неверное количество аргументов")
+        module = int(parts[0])
+        question = parts[1]
+    except (ValueError, IndexError):
+        await message.answer("Используйте формат:\n/add_question <номер модуля> | <вопрос>")
+        return
+
+    await db.add_question(module, question)
+    await message.answer("Вопрос к модулю успешно добавлен")
+
+
+@router.message(StateModule.waiting_for_answer)
+async def handle_module_answer(message: Message, state: FSMContext):
+    user_answer = message.text
+    data = await state.get_data()
+    current_module = data.get('current_module')
+
+    await db.save_answer(user_id=message.from_user.id, module=current_module, answer=user_answer)
+
+    await message.answer("Спасибо за ответ! Переходим к следующему модулю?", reply_markup=module_kb)
+
+    await state.update_data(current_theme=1)
+    await state.set_state(StateModule.current_module)
+
 
 
 async def end(callback_query: CallbackQuery, state: FSMContext):

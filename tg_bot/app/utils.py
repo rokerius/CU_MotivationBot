@@ -1,7 +1,8 @@
 from aiogram import types
 from aiogram.types import InputMediaPhoto
+import os
 
-from .config import ADMINS
+ADMINS = os.getenv("ADMINS").split()
 
 
 async def show_post_with_images(message: types.Message, module: int, theme: int, db):
