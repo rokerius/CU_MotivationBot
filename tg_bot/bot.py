@@ -22,6 +22,7 @@ async def main():
         await db.import_csv_to_posts_db('data/posts.csv')
         await db.import_csv_to_pictures_db('data/pictures.csv')
         await db.import_csv_to_questions_db('data/questions.csv')
+        await db.import_csv_to_quizzes_db('data/quizzes.csv')
         await dp.start_polling(bot)
     finally:
         await db.disconnect()
