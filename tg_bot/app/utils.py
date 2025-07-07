@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.types import InputMediaPhoto
 import os
+import csv
 
 ADMINS = os.getenv("ADMINS").split()
 
@@ -28,6 +29,19 @@ async def show_post_with_images(message: types.Message, module: int, theme: int,
             media.append(InputMediaPhoto(media=row['image_url']))
 
     await message.answer_media_group(media=media)
+
+
+def read_modules_description_from_csv(file_path):
+    modules_description = {}
+    with open(file_path, mode='r', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            if not row or row[0] == "id":
+                continue
+            key = int(row[0].strip())
+            value = row[1].strip()
+            modules_description[key] = value
+    return modules_description
 
 
 def is_admin(username: str) -> bool:

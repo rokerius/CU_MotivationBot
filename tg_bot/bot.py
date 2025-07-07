@@ -3,7 +3,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 
 from app.database.db import db
-from app.handlers import router
+from app.handlers import all_routers
 import os
 
 TOKEN = os.getenv("TOKEN")
@@ -15,7 +15,9 @@ async def main():
     await db.connect()
     await db.init_tables()
 
-    dp.include_router(router)
+    for router in all_routers:
+        dp.include_router(router)
+
     try:
         await db.import_csv_to_posts_db('data/posts.csv')
         await db.import_csv_to_pictures_db('data/pictures.csv')
