@@ -47,3 +47,15 @@ class UsersDatabase(DatabaseBase):
 
             await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
             return True
+
+    async def save_quiz_answer(self, user_id: int, module: int, quiz: int, answer: str):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow('SELECT quiz_answers FROM users WHERE id = $1', user_id)
+            if not row:
+                return False
+
+            old_answers = row['quiz_answers'] or ""
+            answers = old_answers + "\n" + str(module) + "." + str(quiz) + ") " + answer
+
+            await conn.execute('UPDATE users SET quiz_answers = $1 WHERE id = $2', answers, user_id)
+            return True

@@ -74,3 +74,19 @@ back_to_review_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
 back_to_main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
 ])
+
+def create_quiz_options_kb(quiz: dict) -> InlineKeyboardMarkup:
+    options = [
+        quiz.get('option_1'),
+        quiz.get('option_2'),
+        quiz.get('option_3'),
+        quiz.get('option_4'),
+        quiz.get('option_5'),
+    ]
+    options = [opt for opt in options if opt]
+
+    buttons = [InlineKeyboardButton(text=opt, callback_data=f"quiz_answer:{opt}") for opt in options]
+
+    inline_keyboard = [[button] for button in buttons]
+
+    return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
