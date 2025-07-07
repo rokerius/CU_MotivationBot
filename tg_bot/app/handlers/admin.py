@@ -2,7 +2,6 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types import FSInputFile
-import tempfile
 
 from ..database.db import db
 from ..utils import *
@@ -12,7 +11,7 @@ router = Router()
 
 
 # ADMIN ONLY: Handler для добавления нового поста
-@router.message(Command("add_post"))
+@router.message(Command("set_post"))
 async def add_post_handler(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
@@ -23,7 +22,7 @@ async def add_post_handler(message: Message):
         title = title.strip()
         content = content.strip()
     except ValueError:
-        await message.answer("Используйте формат: /add_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
+        await message.answer("Используйте формат: /set_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
         return
 
     post = await db.get_post_by_module_and_theme(int(module), int(theme))
@@ -37,7 +36,7 @@ async def add_post_handler(message: Message):
     await message.answer(f"Пост добавлен с id = {post_id}")
 
 # ADMIN ONLY: Handler для добавления картинки к посту
-@router.message(Command("add_image"))
+@router.message(Command("set_image"))
 async def add_image_handler(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
@@ -53,7 +52,7 @@ async def add_image_handler(message: Message):
         theme = int(parts[1])
         image_url = parts[2]
     except (ValueError, IndexError):
-        await message.answer("Используйте формат:\n/add_image <номер модуля> | <номер темы> | <URL картинки>")
+        await message.answer("Используйте формат:\n/set_image <номер модуля> | <номер темы> | <URL картинки>")
         return
 
     post = await db.get_post_by_module_and_theme(module, theme)
@@ -65,7 +64,7 @@ async def add_image_handler(message: Message):
     await message.answer("Картинка успешно добавлена к посту.")
 
 # ADMIN ONLY: Handler для добавления вопроса к модулю
-@router.message(Command("add_question"))
+@router.message(Command("set_question"))
 async def add_question_handler(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
@@ -80,7 +79,7 @@ async def add_question_handler(message: Message):
         module = int(parts[0])
         question = parts[1]
     except (ValueError, IndexError):
-        await message.answer("Используйте формат:\n/add_question <номер модуля> | <вопрос>")
+        await message.answer("Используйте формат:\n/set_question <номер модуля> | <вопрос>")
         return
 
     await db.add_question(module, question)
