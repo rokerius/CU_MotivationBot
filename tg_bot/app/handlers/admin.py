@@ -1,6 +1,8 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+from aiogram.types import FSInputFile
+import tempfile
 
 from ..database.db import db
 from ..utils import *
@@ -83,3 +85,31 @@ async def add_question_handler(message: Message):
 
     await db.add_question(module, question)
     await message.answer("Вопрос к модулю успешно добавлен")
+
+
+@router.message(Command("get_stat"))
+async def get_stat_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+
+    tables = ['users', 'posts', 'post_images', 'module_questions', 'quizzes']
+    files = []
+
+    try:
+        await message.answer("Генерирую отчеты, подождите...")
+        for table in tables:
+            csv_path = await db.export_table_to_csv(table)
+            files.append((table, csv_path))
+
+        for table, path in files:
+            await message.answer_document(FSInputFile(path, f"{table}.csv"), caption=f"Таблица: {table}")
+
+    except Exception as e:
+        await message.answer(f"Произошла ошибка при генерации отчетов: {e}")
+
+    finally:
+        for _, path in files:
+            if os.path.exists(path):
+                os.remove(path)
+
