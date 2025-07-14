@@ -43,19 +43,45 @@ class UsersDatabase(DatabaseBase):
                 return False
 
             old_answers = row['answers'] or ""
-            answers = old_answers + "\n" + str(module) + ") " + answer
+            answers = old_answers + "$question" + str(module) + "|" + answer
 
             await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
             return True
 
     async def save_quiz_answer(self, user_id: int, module: int, quiz: int, answer: str):
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow('SELECT quiz_answers FROM users WHERE id = $1', user_id)
+            row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
             if not row:
                 return False
 
-            old_answers = row['quiz_answers'] or ""
-            answers = old_answers + "\n" + str(module) + "." + str(quiz) + ") " + answer
+            old_answers = row['answers'] or ""
+            answers = old_answers + "$quiz" + str(module) + "." + str(quiz) + "|" + answer
 
-            await conn.execute('UPDATE users SET quiz_answers = $1 WHERE id = $2', answers, user_id)
+            await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
             return True
+
+    async def get_answers(self, user_id: int):
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
+            if not row:
+                return None
+            answers_string = row['answers'] or ""
+            answers_list = answers_string.split("$")
+            quiz_answers_list = [x for x in answers_list if x.startswith("quiz")]
+            questions_answers_list = [x for x in answers_list if x.startswith("question")]
+            quiz_answers = [{"module": x.split('.')[0][4:],
+                             "number": x.split('|')[0].split('.')[1],
+                             "answer": x.split('|')[1]} for x in quiz_answers_list]
+            questions_answers = [{"module": x.split('|')[0][8:],
+                             "answer": x.split('|')[1]} for x in questions_answers_list]
+            return {"quizzes": quiz_answers,
+                    "questions": questions_answers}
+
+
+
+
+
+
+
+
+

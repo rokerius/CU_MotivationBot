@@ -18,5 +18,7 @@ async def data(message: Message):
     user = await db.get_user_by_id(message.from_user.id)
     if user:
         await message.answer(f"User found: {user}")
+        answers = await db.get_answers(message.from_user.id)
+        await message.answer(f"answers for user: {answers}")
     else:
         await message.answer("No data for user")

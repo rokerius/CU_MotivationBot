@@ -27,7 +27,6 @@ class DatabaseBase(ABC):
                     modules TEXT,
                     answers TEXT,
                     goals TEXT,
-                    quiz_answers TEXT,
                     created_at TIMESTAMP DEFAULT now()
                 );
             ''')
