@@ -1,4 +1,5 @@
 import csv
+
 from .db_base import DatabaseBase
 
 class QuizzesDatabase(DatabaseBase):
@@ -14,10 +15,12 @@ class QuizzesDatabase(DatabaseBase):
                 option_3 = row.get('option_3')
                 option_4 = row.get('option_4')
                 option_5 = row.get('option_5')
+                description = row.get('description')
                 correct_answer = row['correct_answer']
 
                 await self.add_quiz(
-                    module, question, option_1, option_2, option_3, option_4, option_5, correct_answer
+                    module, question, option_1, option_2, option_3, option_4,
+                    option_5, correct_answer, description
                 )
 
     async def add_quiz(
@@ -29,14 +32,17 @@ class QuizzesDatabase(DatabaseBase):
         option_3: str = None,
         option_4: str = None,
         option_5: str = None,
-        correct_answer: str = None
+        correct_answer: str = None,
+        description: str = None
     ):
         async with self.pool.acquire() as conn:
             await conn.execute('''
                 INSERT INTO quizzes (
-                    module, question, option_1, option_2, option_3, option_4, option_5, correct_answer
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ''', module, question, option_1, option_2, option_3, option_4, option_5, correct_answer)
+                    module, question, option_1, option_2, option_3, option_4, 
+                    option_5, correct_answer, description
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ''', module, question, option_1, option_2, option_3, option_4,
+                               option_5, correct_answer, description)
 
     async def get_quizzes_by_module(self, module: int):
         async with self.pool.acquire() as conn:

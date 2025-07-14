@@ -148,6 +148,7 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
     current_quiz = quizzes[index]
     current_module = data.get('current_module')
     correct_answer = current_quiz.get('correct_answer')
+    description = current_quiz.get('description')
 
     await db.save_quiz_answer(
         user_id=callback_query.from_user.id,
@@ -157,16 +158,16 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
     )
 
     if user_answer == correct_answer:
-        feedback = f"✅ Правильно! {correct_answer}"
+        feedback = f"{current_quiz.get('question')}\n\n✅ Правильно! {correct_answer}\n\n{description}"
     else:
-        feedback = f"❌ Неправильно. Правильный ответ: {correct_answer}"
+        feedback = f"{current_quiz.get('question')}\n\n❌ Неправильно. Правильный ответ: {correct_answer}\n\n{description}"
 
     await callback_query.answer()
     await callback_query.message.delete()
 
     feedback_msg = await callback_query.message.answer(feedback)
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(5)
     await feedback_msg.delete()
 
     index += 1

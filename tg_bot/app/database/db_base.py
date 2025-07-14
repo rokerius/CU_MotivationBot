@@ -68,6 +68,7 @@ class DatabaseBase(ABC):
                      option_4 TEXT,
                      option_5 TEXT,
                      correct_answer TEXT NOT NULL,
+                     description TEXT,
                      created_at TIMESTAMP DEFAULT NOW()
                  );
             ''')
