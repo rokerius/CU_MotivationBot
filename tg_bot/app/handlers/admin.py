@@ -25,14 +25,14 @@ async def add_post_handler(message: Message):
         await message.answer("Используйте формат: /set_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
         return
 
-    post = await db.get_post_by_module_and_theme(int(module), int(theme))
-    if post:
+    existing_post = await db.get_post_by_module_and_theme(int(module), int(theme))
+    if existing_post:
         await message.answer("Пост с таким модулем и темой уже существовал, мы его заменили")
         await show_post_with_images(message, int(module), int(theme), db)
         await message.answer("Поста сверху больше не существует.")
-        return
 
-    post_id = await db.add_post(user_id=message.from_user.id, module=int(module), theme=int(theme), title=title, content=content)
+    post_id = await db.add_post(user_id=message.from_user.id, module=int(module),
+                                theme=int(theme), title=title, content=content)
     await message.answer(f"Пост добавлен с id = {post_id}")
 
 # ADMIN ONLY: Handler для добавления картинки к посту
