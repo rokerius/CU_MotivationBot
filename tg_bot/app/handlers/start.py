@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from ..database.db import db
 from ..keyboards import main_menu_kb
+from ..utils import is_admin
 
 router = Router()
 
@@ -14,6 +15,9 @@ async def start(message: Message):
 
 @router.message(Command('data'))
 async def data(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
     await message.answer('Мы храним следующую информацию о тебе:\n')
     user = await db.get_user_by_id(message.from_user.id)
     if user:

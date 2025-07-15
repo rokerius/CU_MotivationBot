@@ -1,4 +1,6 @@
 import csv
+import re
+
 from .db_base import DatabaseBase
 
 class PicturesDatabase(DatabaseBase):
@@ -17,8 +19,18 @@ class PicturesDatabase(DatabaseBase):
                 await self.add_image_to_post(post_id=int(post['id']), image_url=image_url)
 
     async def add_image_to_post(self, post_id: int, image_url: str):
+        if not isinstance(post_id, int) or post_id <= 0:
+            raise ValueError("post_id must be a positive integer")
+        url_pattern = re.compile(r'^https?://')
+        if not url_pattern.match(image_url):
+            raise ValueError("image_url must be a valid URL starting with http:// or https://")
+
         async with self.pool.acquire() as conn:
-            await conn.execute('''
-                INSERT INTO post_images (post_id, image_url)
-                VALUES ($1, $2)
-            ''', post_id, image_url)
+            try:
+                await conn.execute('''
+                    INSERT INTO post_images (post_id, image_url)
+                    VALUES ($1, $2)
+                ''', post_id, image_url)
+            except Exception as e:
+                raise RuntimeError("Database error occurred") from e
+
