@@ -1,9 +1,11 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from aiogram.types import FSInputFile
+
+from aiogram.types.input_file import FSInputFile, InputFile
 
 from ..database.db import db
+from ..database.db_utils import dicts_to_csv
 from ..utils import *
 
 router = Router()
@@ -88,27 +90,55 @@ async def add_question_handler(message: Message):
 
 @router.message(Command("get_stat"))
 async def get_stat_handler(message: Message):
-    if not is_admin(message.from_user.username):
-        await message.answer("Недостаточно прав 🤬")
-        return
+    await message.answer("Собираю данные и формирую CSV-файлы...")
 
-    tables = ['users', 'posts', 'post_images', 'module_questions', 'quizzes']
-    files = []
+    users = await db.get_all_users()
+    posts = await db.get_all_posts()
+    post_images = await db.get_all_post_images()
+    module_questions = await db.get_all_module_questions()
+    quizzes = await db.get_all_quizzes()
+
+    files_to_send = []
+    temp_files_paths = []
 
     try:
-        await message.answer("Генерирую отчеты, подождите...")
-        for table in tables:
-            csv_path = await db.export_table_to_csv(table)
-            files.append((table, csv_path))
+        if users:
+            tmp_path, filename = await dicts_to_csv(users, 'users.csv')
+            files_to_send.append(FSInputFile(tmp_path, filename=filename))
+            temp_files_paths.append(tmp_path)
 
-        for table, path in files:
-            await message.answer_document(FSInputFile(path, f"{table}.csv"), caption=f"Таблица: {table}")
+        if posts:
+            tmp_path, filename = await dicts_to_csv(posts, 'posts.csv')
+            files_to_send.append(FSInputFile(tmp_path, filename=filename))
+            temp_files_paths.append(tmp_path)
+
+        if post_images:
+            tmp_path, filename = await dicts_to_csv(post_images, 'post_images.csv')
+            files_to_send.append(FSInputFile(tmp_path, filename=filename))
+            temp_files_paths.append(tmp_path)
+
+        if module_questions:
+            tmp_path, filename = await dicts_to_csv(module_questions, 'module_questions.csv')
+            files_to_send.append(FSInputFile(tmp_path, filename=filename))
+            temp_files_paths.append(tmp_path)
+
+        if quizzes:
+            tmp_path, filename = await dicts_to_csv(quizzes, 'quizzes.csv')
+            files_to_send.append(FSInputFile(tmp_path, filename=filename))
+            temp_files_paths.append(tmp_path)
+
+        if not files_to_send:
+            await message.answer("В базе нет данных для экспорта.")
+            return
+
+        await message.answer("Вот ваши данные:")
+        for file in files_to_send:
+            await message.answer_document(file)
 
     except Exception as e:
-        await message.answer(f"Произошла ошибка при генерации отчетов: {e}")
-
+        await message.answer(f"Произошла ошибка при экспорте данных: {e}")
     finally:
-        for _, path in files:
+        for path in temp_files_paths:
             if os.path.exists(path):
                 os.remove(path)
 
