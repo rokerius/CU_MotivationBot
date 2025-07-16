@@ -45,7 +45,8 @@ class DatabaseBase(ABC):
                 CREATE TABLE IF NOT EXISTS post_images (
                     id SERIAL PRIMARY KEY,
                     post_id INT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-                    image_url TEXT NOT NULL,
+                    image_url TEXT,
+                    file_id TEXT,
                     created_at TIMESTAMP DEFAULT NOW()
                 );
             ''')
