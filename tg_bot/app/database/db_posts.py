@@ -43,7 +43,7 @@ class PostsDatabase(DatabaseBase):
     async def get_post_by_module_and_theme(self, module: int, theme: int):
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow('''
-                SELECT * FROM posts
+                SELECT id, title, content FROM posts
                 WHERE module = $1 AND theme = $2
                 LIMIT 1
             ''', module, theme)
