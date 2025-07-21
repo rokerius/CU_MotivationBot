@@ -1,13 +1,11 @@
 import os
 import asyncio
 import gspread
-import pandas as pd
 from gspread_dataframe import get_as_dataframe
 from tg_bot.app.database.db import db
 
 GOOGLE_SHEET_NAME = 'Учебные материалы'
 CREDENTIALS_PATH = os.path.join(os.path.dirname(__file__), 'credentials.json')
-
 REQUIRED_FIELDS = ['user_id', 'module', 'theme', 'title', 'content']
 
 async def main():

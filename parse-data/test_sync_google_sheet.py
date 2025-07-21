@@ -1,11 +1,5 @@
-import os
-import asyncio
 import pytest
-
-# Импортируем функцию main из скрипта синхронизации
 from sync_google_sheet import main, REQUIRED_FIELDS
-
-# Импортируем db для проверки результата
 from tg_bot.app.database.db import db
 
 @pytest.mark.asyncio
