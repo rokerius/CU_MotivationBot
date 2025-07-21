@@ -1,4 +1,4 @@
 id,module,question,option_1,option_2,option_3,correct_answer,description
-1,1,a?,a,b,c,a,description
-2,1,b?,a2,b2,c2,a2,description
-3,1,c?,a3,b3,c3,a3,description
+1,1,Квиз 1.1,a,b,c,a,Описание к квизу
+2,1,Квиз 1.2,a2,b2,c2,a2,Описание к квизу
+3,1,Квиз 1.3,a3,b3,c3,a3,Описание к квизу
