@@ -2,6 +2,7 @@ import csv
 
 from .db_base import DatabaseBase
 
+
 class QuizzesDatabase(DatabaseBase):
 
     async def import_csv_to_quizzes_db(self, csv_file_path: str):
@@ -86,3 +87,24 @@ class QuizzesDatabase(DatabaseBase):
                 raise RuntimeError("Database error occurred while fetching quizzes") from e
 
 
+    async def check_quizzes_done(self, user_id: int, quiz: int, module: int) -> bool:
+        if not (isinstance(user_id, int) and user_id > 0):
+            raise ValueError("user_id must be a positive integer")
+        if not (isinstance(module, int) and module > 0):
+            raise ValueError("module must be a positive integer")
+        if not (isinstance(quiz, int) and quiz >= 0):
+            raise ValueError("quiz number must be >= 0")
+
+        async with self.pool.acquire() as conn:
+            try:
+                row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
+                if row is None:
+                    return False
+
+                answers = row['answers']
+                if answers is None:
+                    return False
+
+                return "$quiz" + str(module) + "." + str(quiz+1) in answers
+            except Exception as e:
+                raise RuntimeError(f"Database error occurred while getting answer: {e}") from e
