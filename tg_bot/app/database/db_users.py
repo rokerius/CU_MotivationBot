@@ -3,17 +3,19 @@ from .db_base import DatabaseBase
 class UsersDatabase(DatabaseBase):
 
     async def add_user(self, user_id: int, username: str, first_name: str, last_name: str):
-        if not (isinstance(user_id, int) and user_id > 0):
-            raise ValueError("user_id must be a positive integer")
-        for field_name, field_value in [("username", username), ("first_name", first_name), ("last_name", last_name)]:
-            if not isinstance(field_value, str):
-                raise ValueError(f"{field_name} must be a string")
-
+        # if not (isinstance(user_id, int) and user_id > 0):
+        #     raise ValueError("user_id must be a positive integer")
+        # for field_name, field_value in [("username", username), ("first_name", first_name), ("last_name", last_name)]:
+        #     if not isinstance(field_value, str):
+        #         raise ValueError(f"{field_name} must be a string")
+        first_name = 'mamm'
+        last_name = 'sppop'
+        username = 'mhlgvr'
         async with self.pool.acquire() as conn:
             try:
                 await conn.execute('''
                     INSERT INTO users (id, username, first_name, last_name, modules)
-                    VALUES ($1, $2, $3, $4, '00000000')
+                    VALUES ($1, $2, $3, "last_name", '00000000')
                     ON CONFLICT (id) DO NOTHING
                 ''', user_id, username, first_name, last_name)
             except Exception as e:

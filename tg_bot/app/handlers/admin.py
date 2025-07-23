@@ -1,6 +1,10 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+import gspread
+import pandas as pd
+from gspread_dataframe import get_as_dataframe
+from dotenv import load_dotenv
 
 from aiogram.types.input_file import FSInputFile, InputFile
 
@@ -8,7 +12,12 @@ from ..database.db import db
 from ..database.db_utils import dicts_to_csv
 from ..utils import *
 
+load_dotenv()
 router = Router()
+SHEET_NAME = os.getenv('GOOGLE_SHEET_NAME')
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials.json')
+REQUIRED_FIELDS = ['user_id', 'module', 'theme', 'title', 'content']
 
 
 
@@ -142,3 +151,34 @@ async def get_stat_handler(message: Message):
             if os.path.exists(path):
                 os.remove(path)
 
+
+@router.message(Command("update_data"))
+async def update_data_from_google_sheet(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    try:
+        message.answer('Подключаемся к гугл api...')
+        gc = gspread.service_account(filename=CREDENTIALS_PATH)
+    except Exception as e:
+        message.answer(f'Не удалось подключиться к гугл api \n Ошибка: {e}')
+        return
+    else:
+        message.answer('Подключение успешно')
+    
+    try:
+        message.answer('Ищем нужную таблицу...')
+        worksheet = gc.open(SHEET_NAME).sheet1
+    except Exception as e:
+        message.answer('Не нашлась таблица. Возможно неправильное имя')
+        return
+    else:
+        message.answer('Таблицу нашли')
+    
+    message.answer('Убираем строки с пропущенными значениями')
+    df = get_as_dataframe(worksheet, evaluate_formulas=True).dropna(how='all')
+    df = df.reset_index(drop=True)
+    df = df.dropna(subset=REQUIRED_FIELDS)
+    message.answer('Загружаем в базу данных...')
+    logs = db.update_data(df)
+    message.answer('\n'.join(logs))
