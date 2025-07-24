@@ -19,7 +19,7 @@ services:
     command: python bot.py
 
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: postgres
     restart: always
     environment:
@@ -28,6 +28,7 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
@@ -38,3 +39,4 @@ services:
 
 volumes:
   postgres_data:
+
