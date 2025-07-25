@@ -45,3 +45,22 @@ class QuestionsDatabase(DatabaseBase):
             except Exception as e:
                 raise RuntimeError("Database error occurred") from e
 
+    async def check_questions_done(self, user_id: int, module: int) -> bool:
+        if not (isinstance(user_id, int) and user_id > 0):
+            raise ValueError("user_id must be a positive integer")
+        if not (isinstance(module, int) and module > 0):
+            raise ValueError("module must be a positive integer")
+
+        async with self.pool.acquire() as conn:
+            try:
+                row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
+                if not row:
+                    return False
+
+                answers = row['answers']
+                if answers is None:
+                    return False
+
+                return "$question" + str(module) + "|" in answers
+            except Exception as e:
+                raise RuntimeError(f"Database error occurred while getting answer: {e}") from e

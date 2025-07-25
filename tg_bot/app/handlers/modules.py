@@ -48,17 +48,36 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
         await callback_query.message.answer("К следующей теме?", reply_markup=theme_kb)
     else:
         quizzes = await db.get_quizzes_by_module(current_module)
+        await state.update_data(quizzes=quizzes)
+        all_done = True
         if quizzes:
-            await state.update_data(quizzes=quizzes, quiz_index=0)
-            first_quiz = quizzes[0]
-            kb = create_quiz_options_kb(first_quiz)
-            await callback_query.message.answer(first_quiz['question'], reply_markup=kb)
-            await state.set_state(StateModule.answering_quizzes)
-        else:
+            for i in range(len(quizzes)):
+                await state.update_data(quiz_index=i)
+                first_quiz = quizzes[i]
+                first_quiz_done = await db.check_quizzes_done(callback_query.from_user.id, i, current_module)
+
+                if not first_quiz_done:
+                    all_done = False
+                    kb = create_quiz_options_kb(first_quiz)
+                    await callback_query.message.answer(first_quiz['question'], reply_markup=kb)
+                    await state.set_state(StateModule.answering_quizzes)
+                    break
+
+        if not quizzes or all_done:
             question = await db.get_question_by_module(current_module)
-            if question:
+            question_done = await db.check_questions_done(int(callback_query.from_user.id), current_module)
+            if question and not question_done:
                 await callback_query.message.answer(question)
                 await state.set_state(StateModule.waiting_for_answer)
+            elif question_done:
+                await db.change_modules_done(callback_query.from_user.id, current_module, "1")
+                await callback_query.message.answer(
+                    "Ты уже отвечал на вопросы к этому модулю. Переходим к следующему модулю?",
+                    reply_markup=module_kb
+                )
+                await state.set_state(StateModule.current_module)
+                await state.update_data(current_theme=1)
+
             else:
                 await db.change_modules_done(callback_query.from_user.id, current_module, "1")
                 await callback_query.message.answer(
@@ -67,7 +86,6 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
                 )
                 await state.set_state(StateModule.current_module)
                 await state.update_data(current_theme=1)
-                await callback_query.message.answer('Перейдем дальше?', reply_markup=module_kb)
 
     await callback_query.message.delete()
 
@@ -133,7 +151,7 @@ async def handle_quiz_answer(message: Message, state: FSMContext):
         await state.update_data(quiz_index=index)
 
     else:
-        await message.answer("Спасибо за ответы! Переходим к следующему модулю?", reply_markup=module_kb)
+        await message.answer("Спасибо за ответы! Переходим к следующему?", reply_markup=module_kb)
         await state.set_state(StateModule.current_module)
         await state.update_data(current_theme=1)
         await state.update_data(quizzes=None, quiz_index=None)
@@ -167,7 +185,7 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
 
     feedback_msg = await callback_query.message.answer(feedback)
 
-    await asyncio.sleep(5)
+    await asyncio.sleep(2)
     await feedback_msg.delete()
 
     index += 1
@@ -178,9 +196,17 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
         await state.update_data(quiz_index=index)
     else:
         question = await db.get_question_by_module(current_module)
-        if question:
+        question_done = await db.check_questions_done(int(callback_query.from_user.id), current_module)
+        if question and not question_done:
             await callback_query.message.answer(question)
             await state.set_state(StateModule.waiting_for_answer)
+        elif question_done:
+            await callback_query.message.answer(
+                "Ты уже отвечал на вопросы к этому модулю. Переходим к следующему?",
+                reply_markup=module_kb
+            )
+            await state.set_state(StateModule.current_module)
+            await state.update_data(current_theme=1)
         else:
             await callback_query.message.answer(
                 "Спасибо за ответы! Переходим к следующему модулю?",
@@ -194,5 +220,17 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
 
 
 async def end(callback_query: CallbackQuery, state: FSMContext):
-    await callback_query.message.answer('Конец')
+    answers = await db.get_answers(callback_query.from_user.id)
+    await callback_query.message.answer('Это был последний модуль! Спасибо за прохождение!\n\n'
+                                        'Вот ответы, которые ты давал на наши вопросы:')
+    questions = answers["questions"]
+    message_text = ""
+    for q in questions:
+        title = await db.get_question_by_module(int(q['module']))
+        message_text += f"❓ <b>{title}</b>\n"
+        message_text += f"💡 Ответ: {q['answer']}\n\n"
+    await callback_query.message.answer(
+        message_text.strip(),
+        parse_mode="HTML"
+    )
     await state.clear()
