@@ -1,18 +1,18 @@
+import logging
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-
-from aiogram.types.input_file import FSInputFile, InputFile
+from aiogram.types.input_file import FSInputFile
 
 from ..database.db import db
-from ..database.db_utils import dicts_to_csv
+from ..work_with_csv import dicts_to_csv
 from ..utils import *
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
 
-
-# ADMIN ONLY: Handler для добавления нового поста
 @router.message(Command("set_post"))
 async def add_post_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -35,9 +35,11 @@ async def add_post_handler(message: Message):
 
     post_id = await db.add_post(user_id=message.from_user.id, module=int(module),
                                 theme=int(theme), title=title, content=content)
-    await message.answer(f"Пост добавлен с id = {post_id}")
 
-# ADMIN ONLY: Handler для добавления картинки к посту
+    logger.info(f"Setting post from user {message.from_user.id}: ({module}|{theme}|{title}|{content}) -> post id is {post_id}")
+    await message.answer(f"Пост успешно добавлен!")
+
+
 @router.message(Command("set_image"))
 async def add_image_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -63,9 +65,10 @@ async def add_image_handler(message: Message):
         return
 
     await db.add_image_to_post(post_id=post['id'], image_url=image_url)
-    await message.answer("Картинка успешно добавлена к посту.")
+    logger.info(f"Setting image from user {message.from_user.id}: ({post['id']}|{image_url}")
+    await message.answer("Картинка успешно добавлена к посту!")
 
-# ADMIN ONLY: Handler для добавления вопроса к модулю
+
 @router.message(Command("set_question"))
 async def add_question_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -85,6 +88,7 @@ async def add_question_handler(message: Message):
         return
 
     await db.add_question(module, question)
+    logger.info(f"Setting question from user {message.from_user.id}: ({module}|{question}")
     await message.answer("Вопрос к модулю успешно добавлен")
 
 
@@ -136,6 +140,7 @@ async def get_stat_handler(message: Message):
             await message.answer_document(file)
 
     except Exception as e:
+        logger.error(f"error during sending stats: {e}")
         await message.answer(f"Произошла ошибка при экспорте данных: {e}")
     finally:
         for path in temp_files_paths:

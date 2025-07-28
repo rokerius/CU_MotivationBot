@@ -32,7 +32,7 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.answer()
     await callback_query.message.delete()
 
-# Handler для перехода к следующей теме внутри модуля
+
 @router.callback_query(lambda c: c.data == 'next_theme')
 async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
     gotten_data = await state.get_data()
@@ -228,7 +228,7 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     for q in questions:
         title = await db.get_question_by_module(int(q['module']))
         message_text += f"❓ <b>{title}</b>\n"
-        message_text += f"💡 Ответ: {q['answer']}\n\n"
+        message_text += f"💡 {q['answer']}\n\n"
     await callback_query.message.answer(
         message_text.strip(),
         parse_mode="HTML"
