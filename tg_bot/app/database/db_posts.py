@@ -26,3 +26,46 @@ class PostsDatabase(DatabaseBase):
             if row:
                 return dict(row)
             return None
+
+    async def get_all_posts(self):
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch('SELECT * FROM posts')
+            return [dict(row) for row in rows]
+
+    async def update_data(self, df):
+        logs = []
+        db_posts = await self.get_all_posts()
+        db_index = {(int(p['module']), int(p['theme'])): p for p in db_posts}
+        added, updated = 0, 0
+        for i, row in df.iterrows():
+            try:
+                user_id = int(row['user_id'])
+                module = int(row['module'])
+                theme = int(row['theme'])
+                title = str(row['title'])
+                content = str(row['content'])
+            except Exception as e:
+                logs.append(f"Ошибка в строке: {i+1} — {e}. Полученные данные: \n\n{row} \n\nПереходим к следующей")
+                continue
+            key = (module, theme)
+            db_post = db_index.get(key)
+            if not db_post:
+                logs.append(f"Добавляем тему {theme} в модуль {module}...")
+                try:
+                    await self.add_post(user_id, module, theme, title, content)
+                except Exception as e:
+                    logs.append(f"Ошибка: {e}")
+                else:
+                    added += 1
+            else:
+                if db_post['title'] != title or db_post['content'] != content or db_post['user_id'] != user_id:
+                    logs.append(f"Обновляем тему {theme} в модуле {module}...")
+                    try:
+                        await self.add_post(user_id, module, theme, title, content)
+                    except Exception as e:
+                        logs.append(f"Ошибка: {e}")
+                    else:
+                        updated += 1
+        logs.append(f"Синхронизация завершена. Добавлено: {added}, обновлено: {updated}")
+
+        return logs

@@ -3,6 +3,8 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types.input_file import FSInputFile
+import gspread
+from gspread_dataframe import get_as_dataframe
 
 from ..database.db import db
 from ..work_with_csv import dicts_to_csv
@@ -11,6 +13,11 @@ from ..utils import *
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+SHEET_NAME = "Учебные материалы"
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials.json')
+REQUIRED_FIELDS = ['user_id', 'module', 'theme', 'title', 'content']
 
 
 @router.message(Command("set_post"))
@@ -147,3 +154,25 @@ async def get_stat_handler(message: Message):
             if os.path.exists(path):
                 os.remove(path)
 
+
+@router.message(Command("update_data"))
+async def update_data_from_google_sheet(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    try:
+        gc = gspread.service_account(filename=CREDENTIALS_PATH)
+    except Exception as e:
+        await message.answer(f'Не удалось подключиться к гугл api \n Ошибка: {e}')
+        return
+
+    try:
+        worksheet = gc.open(SHEET_NAME).sheet1
+    except Exception as e:
+        await message.answer(f'Не нашлась таблица. Возможно неправильное имя {SHEET_NAME}')
+        return
+
+    df = get_as_dataframe(worksheet, evaluate_formulas=True).dropna(how='all')
+    df['user_id'] = df['user_id'].fillna(1)
+    logs = await db.update_data(df)
+    await message.answer('\n'.join(logs))
