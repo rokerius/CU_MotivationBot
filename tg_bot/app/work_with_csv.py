@@ -43,7 +43,7 @@ async def import_csv_to_posts_db(db: Database, csv_file_path: str):
             theme = int(row['theme'])
             title = row['title']
             content = row['content']
-            await db.add_post(user_id, module, theme, title, content)
+            await db.set_post(user_id, module, theme, title, content)
 
 
 async def import_csv_to_pictures_db(self, csv_file_path: str):

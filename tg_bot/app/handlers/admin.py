@@ -7,6 +7,7 @@ import gspread
 from gspread_dataframe import get_as_dataframe
 
 from ..database.db import db
+from ..keyboards import main_menu_kb
 from ..work_with_csv import dicts_to_csv
 from ..utils import *
 
@@ -28,23 +29,29 @@ async def add_post_handler(message: Message):
     try:
         _, rest = message.text.split(' ', 1)
         module, theme, title, content = rest.split('|', 3)
+        module, theme = int(module.strip()), int(theme.strip())
         title = title.strip()
         content = content.strip()
     except ValueError:
         await message.answer("Используйте формат: /set_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
         return
 
-    existing_post = await db.get_post_by_module_and_theme(int(module), int(theme))
+    existing_post = await db.get_post_by_module_and_theme(module, theme)
     if existing_post:
         await message.answer("Пост с таким модулем и темой уже существовал, мы его заменили")
-        await show_post_with_images(message, int(module), int(theme), db)
-        await message.answer("Поста сверху больше не существует.")
+        await show_post_with_images(message, module, theme, db)
+        await message.answer("Поста сверху больше не существует. Ниже - новый пост")
 
-    post_id = await db.add_post(user_id=message.from_user.id, module=int(module),
-                                theme=int(theme), title=title, content=content)
+    post_id = await db.set_post(user_id=message.from_user.id, module=module,
+                                theme=theme, title=title, content=content)
 
     logger.info(f"Setting post from user {message.from_user.id}: ({module}|{theme}|{title}|{content}) -> post id is {post_id}")
-    await message.answer(f"Пост успешно добавлен!")
+
+    post = await db.get_post_by_module_and_theme(module, theme)
+    if post:
+        await show_post_with_images(message, module, theme, db)
+        await message.answer("К следующей теме?", reply_markup=main_menu_kb)
+
 
 
 @router.message(Command("set_image"))
@@ -74,6 +81,7 @@ async def add_image_handler(message: Message):
     await db.add_image_to_post(post_id=post['id'], image_url=image_url)
     logger.info(f"Setting image from user {message.from_user.id}: ({post['id']}|{image_url}")
     await message.answer("Картинка успешно добавлена к посту!")
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
 
 @router.message(Command("set_question"))
@@ -97,6 +105,7 @@ async def add_question_handler(message: Message):
     await db.add_question(module, question)
     logger.info(f"Setting question from user {message.from_user.id}: ({module}|{question}")
     await message.answer("Вопрос к модулю успешно добавлен")
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
 
 @router.message(Command("get_stat"))
@@ -153,6 +162,7 @@ async def get_stat_handler(message: Message):
         for path in temp_files_paths:
             if os.path.exists(path):
                 os.remove(path)
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
 
 @router.message(Command("update_data"))
@@ -176,3 +186,4 @@ async def update_data_from_google_sheet(message: Message):
     df['user_id'] = df['user_id'].fillna(1)
     logs = await db.update_data(df)
     await message.answer('\n'.join(logs))
+    await message.answer('Главное меню', reply_markup=main_menu_kb)

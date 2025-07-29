@@ -87,7 +87,8 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
                 await state.set_state(StateModule.current_module)
                 await state.update_data(current_theme=1)
 
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
+
 
 
 @router.callback_query(lambda c: c.data == 'next_module')
@@ -97,8 +98,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     next_module = current_module + 1
 
     if next_module > max(modules_description.keys()):
-        await callback_query.message.delete()
-        await callback_query.answer()
+        await safe_delete_message(callback_query.message)
         await end(callback_query, state)
         return
 
@@ -113,7 +113,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! Пошли дальше?',
                                             reply_markup=module_kb)
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
 
 
 @router.message(StateModule.waiting_for_answer)
@@ -180,13 +180,13 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
     else:
         feedback = f"{current_quiz.get('question')}\n\n❌ Неправильно. Правильный ответ: {correct_answer}\n\n{description}"
 
-    await callback_query.answer()
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
+
 
     feedback_msg = await callback_query.message.answer(feedback)
 
     await asyncio.sleep(2)
-    await feedback_msg.delete()
+    await safe_delete_message(feedback_msg)
 
     index += 1
     if index < len(quizzes):

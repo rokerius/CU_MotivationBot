@@ -85,7 +85,7 @@ class DatabaseBase(ABC):
         pass
 
     @abstractmethod
-    async def add_post(self, user_id: int, module: int, theme: int, title: str, content: str):
+    async def set_post(self, user_id: int, module: int, theme: int, title: str, content: str):
         pass
 
     @abstractmethod
