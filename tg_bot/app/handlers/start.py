@@ -4,7 +4,7 @@ from aiogram.types import Message
 import logging
 
 from ..database.db import db
-from ..keyboards import main_menu_kb
+from ..keyboards import main_menu_kb, back_to_main_menu_kb
 from ..utils import is_admin
 
 logger = logging.getLogger(__name__)
@@ -17,16 +17,8 @@ async def start(message: Message):
     logger.info(f"New user: ({user.id}, {user.username}, {user.first_name} {user.last_name})")
     await message.answer('Привет!', reply_markup=main_menu_kb)
 
-@router.message(Command('data'))
-async def data(message: Message):
-    if not is_admin(message.from_user.username):
-        await message.answer("Недостаточно прав 🤬")
-        return
-    await message.answer('Мы храним следующую информацию о тебе:\n')
-    user = await db.get_user_by_id(message.from_user.id)
-    if user:
-        await message.answer(f"User found: {user}")
-        answers = await db.get_answers(message.from_user.id)
-        await message.answer(f"answers for user: {answers}")
-    else:
-        await message.answer("No data for user")
+@router.message(Command('help'))
+async def help(message: Message):
+    logger.info(f"User {message.from_user.id} asking for help")
+    await message.message.edit_text('По техническим вопросам пишите Денису: @rokerius',
+                                           reply_markup=back_to_main_menu_kb)

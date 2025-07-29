@@ -17,7 +17,7 @@ async def main_menu(callback_query: CallbackQuery, state: FSMContext):
 @router.callback_query(lambda c: c.data == 'help_menu')
 async def help_menu(callback_query: CallbackQuery, state: FSMContext):
     logger.info(f"User {callback_query.from_user.id} asking for help")
-    await callback_query.message.edit_text('По техническим неполадкам пишите Денису: @rokerius',
+    await callback_query.message.edit_text('По техническим вопросам пишите Денису: @rokerius',
                                            reply_markup=back_to_main_menu_kb)
     await state.clear()
 
@@ -25,8 +25,9 @@ async def help_menu(callback_query: CallbackQuery, state: FSMContext):
 async def modules_menu(callback_query: CallbackQuery):
     user = callback_query.from_user
     kb = await get_modules_keyboard(user.id)
-    await callback_query.message.edit_text(
-        'Выберите интересующий модуль или идите по порядку)', reply_markup=kb)
+    if (callback_query.message.text != 'Выберите интересующий модуль или идите по порядку)' or
+            callback_query.message.reply_markup != kb):
+        await callback_query.message.edit_text('Выберите интересующий модуль или идите по порядку)', reply_markup=kb)
 
 
 @router.callback_query(lambda c: c.data == 'review_menu')

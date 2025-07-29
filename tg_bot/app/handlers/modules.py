@@ -29,8 +29,7 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! Пошли дальше?',
                                             reply_markup=module_kb)
-    await callback_query.answer()
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
 
 
 @router.callback_query(lambda c: c.data == 'next_theme')
@@ -234,3 +233,6 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
         parse_mode="HTML"
     )
     await state.clear()
+
+    kb = await get_review_kb(callback_query.from_user.id)
+    await callback_query.message.answer('*текст почему нужно ревью в конце*', reply_markup=kb)
