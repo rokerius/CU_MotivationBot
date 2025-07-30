@@ -61,7 +61,7 @@ class PostsDatabase(DatabaseBase):
             if not db_post:
                 logs.append(f"Добавляем тему {theme} в модуль {module}...")
                 try:
-                    await self.add_post(user_id, module, theme, title, content)
+                    await self.set_post(user_id, module, theme, title, content)
                 except Exception as e:
                     logs.append(f"Ошибка: {e}")
                 else:
@@ -70,7 +70,7 @@ class PostsDatabase(DatabaseBase):
                 if db_post['title'] != title or db_post['content'] != content or db_post['user_id'] != user_id:
                     logs.append(f"Обновляем тему {theme} в модуле {module}...")
                     try:
-                        await self.add_post(user_id, module, theme, title, content)
+                        await self.set_post(user_id, module, theme, title, content)
                     except Exception as e:
                         logs.append(f"Ошибка: {e}")
                     else:
