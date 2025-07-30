@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .db_base import DatabaseBase
 
 class UsersDatabase(DatabaseBase):
@@ -42,9 +44,9 @@ class UsersDatabase(DatabaseBase):
             row = await conn.fetchrow('SELECT answers FROM users WHERE id = $1', user_id)
             if not row:
                 return False
-
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             old_answers = row['answers'] or ""
-            answers = old_answers + f"$question{module}|{answer}"
+            answers = old_answers + f"$question{module}|{answer}|{now}"
 
             await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
             return True
@@ -55,8 +57,9 @@ class UsersDatabase(DatabaseBase):
             if not row:
                 return False
 
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             old_answers = row['answers'] or ""
-            answers = old_answers + f"$quiz{module}.{quiz}|{answer}"
+            answers = old_answers + f"$quiz{module}.{quiz}|{answer}|{now}"
 
             await conn.execute('UPDATE users SET answers = $1 WHERE id = $2', answers, user_id)
             return True
@@ -73,10 +76,12 @@ class UsersDatabase(DatabaseBase):
             quiz_answers = [{
                 "module": x.split('.')[0][4:],
                 "number": x.split('|')[0].split('.')[1],
-                "answer": x.split('|')[1]
+                "answer": x.split('|')[1],
+                "time": x.split('|')[2]
             } for x in quiz_answers_list]
             questions_answers = [{
                 "module": x.split('|')[0][8:],
-                "answer": x.split('|')[1]
+                "answer": x.split('|')[1],
+                "time": x.split('|')[2]
             } for x in questions_answers_list]
             return {"quizzes": quiz_answers, "questions": questions_answers}
