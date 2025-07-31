@@ -1,11 +1,22 @@
 from aiogram import types
 from aiogram.types import InputMediaPhoto
+from aiogram.exceptions import TelegramBadRequest
 import os
 import csv
 import re
+import logging
 
-
+logger = logging.getLogger(__name__)
 ADMINS = os.getenv("ADMINS").split()
+
+async def safe_delete_message(message):
+    try:
+        await message.delete()
+    except TelegramBadRequest as e:
+        if "message to delete not found" in str(e):
+            pass
+        else:
+            logger.error(f"Failed to delete message: {e}")
 
 
 async def show_post_with_images(message: types.Message, module: int, theme: int, db):

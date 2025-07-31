@@ -29,10 +29,9 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! Пошли дальше?',
                                             reply_markup=module_kb)
-    await callback_query.answer()
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
 
-# Handler для перехода к следующей теме внутри модуля
+
 @router.callback_query(lambda c: c.data == 'next_theme')
 async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
     gotten_data = await state.get_data()
@@ -87,7 +86,8 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
                 await state.set_state(StateModule.current_module)
                 await state.update_data(current_theme=1)
 
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
+
 
 
 @router.callback_query(lambda c: c.data == 'next_module')
@@ -97,8 +97,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     next_module = current_module + 1
 
     if next_module > max(modules_description.keys()):
-        await callback_query.message.delete()
-        await callback_query.answer()
+        await safe_delete_message(callback_query.message)
         await end(callback_query, state)
         return
 
@@ -113,7 +112,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     else:
         await callback_query.message.answer('Это последняя тема в этом модуле! Пошли дальше?',
                                             reply_markup=module_kb)
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
 
 
 @router.message(StateModule.waiting_for_answer)
@@ -180,13 +179,13 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
     else:
         feedback = f"{current_quiz.get('question')}\n\n❌ Неправильно. Правильный ответ: {correct_answer}\n\n{description}"
 
-    await callback_query.answer()
-    await callback_query.message.delete()
+    await safe_delete_message(callback_query.message)
+
 
     feedback_msg = await callback_query.message.answer(feedback)
 
     await asyncio.sleep(2)
-    await feedback_msg.delete()
+    await safe_delete_message(feedback_msg)
 
     index += 1
     if index < len(quizzes):
@@ -228,9 +227,12 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     for q in questions:
         title = await db.get_question_by_module(int(q['module']))
         message_text += f"❓ <b>{title}</b>\n"
-        message_text += f"💡 Ответ: {q['answer']}\n\n"
+        message_text += f"💡 {q['answer']}\n\n"
     await callback_query.message.answer(
         message_text.strip(),
         parse_mode="HTML"
     )
     await state.clear()
+
+    kb = await get_review_kb(callback_query.from_user.id)
+    await callback_query.message.answer('*текст почему нужно ревью в конце*', reply_markup=kb)

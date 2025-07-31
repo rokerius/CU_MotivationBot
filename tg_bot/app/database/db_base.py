@@ -1,4 +1,3 @@
-# tg_bot/app/database/db_base.py
 from abc import ABC, abstractmethod
 import asyncpg
 import os
@@ -78,19 +77,7 @@ class DatabaseBase(ABC):
         await self.pool.close()
 
     @abstractmethod
-    async def import_csv_to_posts_db(self, csv_file_path: str):
-        pass
-
-    @abstractmethod
-    async def import_csv_to_pictures_db(self, csv_file_path: str):
-        pass
-
-    @abstractmethod
-    async def import_csv_to_questions_db(self, csv_file_path: str):
-        pass
-
-    @abstractmethod
-    async def add_user(self, user_id: int, username: str, first_name: str, last_name: str):
+    async def add_user(self, user_id: int, username: str):
         pass
 
     @abstractmethod
@@ -98,7 +85,7 @@ class DatabaseBase(ABC):
         pass
 
     @abstractmethod
-    async def add_post(self, user_id: int, module: int, theme: int, title: str, content: str):
+    async def set_post(self, user_id: int, module: int, theme: int, title: str, content: str):
         pass
 
     @abstractmethod

@@ -1,18 +1,26 @@
+import logging
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-
-from aiogram.types.input_file import FSInputFile, InputFile
+from aiogram.types.input_file import FSInputFile
+import gspread
+from gspread_dataframe import get_as_dataframe
 
 from ..database.db import db
-from ..database.db_utils import dicts_to_csv
+from ..keyboards import main_menu_kb
+from ..work_with_csv import dicts_to_csv
 from ..utils import *
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
+SHEET_NAME = "Учебные материалы"
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials.json')
+REQUIRED_FIELDS = ['user_id', 'module', 'theme', 'title', 'content']
 
 
-# ADMIN ONLY: Handler для добавления нового поста
 @router.message(Command("set_post"))
 async def add_post_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -21,23 +29,31 @@ async def add_post_handler(message: Message):
     try:
         _, rest = message.text.split(' ', 1)
         module, theme, title, content = rest.split('|', 3)
+        module, theme = int(module.strip()), int(theme.strip())
         title = title.strip()
         content = content.strip()
     except ValueError:
         await message.answer("Используйте формат: /set_post <номер модуля> | <номер темы> | <заголовок> | <содержимое>")
         return
 
-    existing_post = await db.get_post_by_module_and_theme(int(module), int(theme))
+    existing_post = await db.get_post_by_module_and_theme(module, theme)
     if existing_post:
         await message.answer("Пост с таким модулем и темой уже существовал, мы его заменили")
-        await show_post_with_images(message, int(module), int(theme), db)
-        await message.answer("Поста сверху больше не существует.")
+        await show_post_with_images(message, module, theme, db)
+        await message.answer("Поста сверху больше не существует. Ниже - новый пост")
 
-    post_id = await db.add_post(user_id=message.from_user.id, module=int(module),
-                                theme=int(theme), title=title, content=content)
-    await message.answer(f"Пост добавлен с id = {post_id}")
+    post_id = await db.set_post(user_id=message.from_user.id, module=module,
+                                theme=theme, title=title, content=content)
 
-# ADMIN ONLY: Handler для добавления картинки к посту
+    logger.info(f"Setting post from user {message.from_user.id}: ({module}|{theme}|{title}|{content}) -> post id is {post_id}")
+
+    post = await db.get_post_by_module_and_theme(module, theme)
+    if post:
+        await show_post_with_images(message, module, theme, db)
+        await message.answer("К следующей теме?", reply_markup=main_menu_kb)
+
+
+
 @router.message(Command("set_image"))
 async def add_image_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -63,9 +79,11 @@ async def add_image_handler(message: Message):
         return
 
     await db.add_image_to_post(post_id=post['id'], image_url=image_url)
-    await message.answer("Картинка успешно добавлена к посту.")
+    logger.info(f"Setting image from user {message.from_user.id}: ({post['id']}|{image_url}")
+    await message.answer("Картинка успешно добавлена к посту!")
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
-# ADMIN ONLY: Handler для добавления вопроса к модулю
+
 @router.message(Command("set_question"))
 async def add_question_handler(message: Message):
     if not is_admin(message.from_user.username):
@@ -85,7 +103,9 @@ async def add_question_handler(message: Message):
         return
 
     await db.add_question(module, question)
+    logger.info(f"Setting question from user {message.from_user.id}: ({module}|{question}")
     await message.answer("Вопрос к модулю успешно добавлен")
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
 
 @router.message(Command("get_stat"))
@@ -136,9 +156,34 @@ async def get_stat_handler(message: Message):
             await message.answer_document(file)
 
     except Exception as e:
+        logger.error(f"error during sending stats: {e}")
         await message.answer(f"Произошла ошибка при экспорте данных: {e}")
     finally:
         for path in temp_files_paths:
             if os.path.exists(path):
                 os.remove(path)
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
 
+
+@router.message(Command("update_data"))
+async def update_data_from_google_sheet(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    try:
+        gc = gspread.service_account(filename=CREDENTIALS_PATH)
+    except Exception as e:
+        await message.answer(f'Не удалось подключиться к гугл api \n Ошибка: {e}')
+        return
+
+    try:
+        worksheet = gc.open(SHEET_NAME).sheet1
+    except Exception as e:
+        await message.answer(f'Не нашлась таблица. Возможно неправильное имя {SHEET_NAME}')
+        return
+
+    df = get_as_dataframe(worksheet, evaluate_formulas=True).dropna(how='all')
+    df['user_id'] = df['user_id'].fillna(1)
+    logs = await db.update_data(df)
+    await message.answer('\n'.join(logs))
+    await message.answer('Главное меню', reply_markup=main_menu_kb)
