@@ -41,7 +41,7 @@ class PostsDatabase(DatabaseBase):
             rows = await conn.fetch('SELECT * FROM posts')
             return [dict(row) for row in rows]
 
-    async def update_data(self, df):
+    async def update_posts_data(self, df):
         logs = []
         db_posts = await self.get_all_posts()
         db_index = {(int(p['module']), int(p['theme'])): p for p in db_posts}
@@ -75,6 +75,6 @@ class PostsDatabase(DatabaseBase):
                         logs.append(f"Ошибка: {e}")
                     else:
                         updated += 1
-        logs.append(f"Синхронизация завершена. Добавлено: {added}, обновлено: {updated}")
+        logs.append(f"Синхронизация постов завершена. Добавлено: {added}, обновлено: {updated}")
 
         return logs

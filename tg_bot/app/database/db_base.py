@@ -76,6 +76,10 @@ class DatabaseBase(ABC):
     async def disconnect(self):
         await self.pool.close()
 
+    async def execute(self, query: str):
+        async with self.pool.acquire() as conn:
+            return await conn.execute(query)
+
     @abstractmethod
     async def add_user(self, user_id: int, username: str):
         pass

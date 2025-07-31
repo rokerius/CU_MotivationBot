@@ -1,4 +1,5 @@
 import logging
+import os
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -7,7 +8,7 @@ import gspread
 from gspread_dataframe import get_as_dataframe
 
 from ..database.db import db
-from ..keyboards import main_menu_kb
+from ..keyboards import main_menu_kb, sync_data_kb
 from ..work_with_csv import dicts_to_csv
 from ..utils import *
 
@@ -16,9 +17,8 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 SHEET_NAME = "Учебные материалы"
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials.json')
-REQUIRED_FIELDS = ['user_id', 'module', 'theme', 'title', 'content']
 
 
 @router.message(Command("set_post"))
@@ -170,20 +170,82 @@ async def update_data_from_google_sheet(message: Message):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
         return
+    await message.answer("Получаю данные из гугл таблицы...")
     try:
-        gc = gspread.service_account(filename=CREDENTIALS_PATH)
+        gc = gspread.service_account(filename='credentials.json')
     except Exception as e:
         await message.answer(f'Не удалось подключиться к гугл api \n Ошибка: {e}')
         return
-
+    
     try:
-        worksheet = gc.open(SHEET_NAME).sheet1
+        posts_text = gc.open(SHEET_NAME).get_worksheet(0)
+        posts_images = gc.open(SHEET_NAME).get_worksheet(1)
+        questions = gc.open(SHEET_NAME).get_worksheet(2)
+        quizzes = gc.open(SHEET_NAME).get_worksheet(3)
     except Exception as e:
-        await message.answer(f'Не нашлась таблица. Возможно неправильное имя {SHEET_NAME}')
+        await message.answer(
+            f'Ошибка при чтении таблиц. Возможно неправильное имя ({SHEET_NAME}) или нет одной из страниц \n Ошибка: {e}')
         return
+    await message.answer(
+        f'Таблица {SHEET_NAME} найдена. Выберите, что хотите синхронизировать:', 
+        reply_markup=sync_data_kb)
 
-    df = get_as_dataframe(worksheet, evaluate_formulas=True).dropna(how='all')
-    df['user_id'] = df['user_id'].fillna(1)
-    logs = await db.update_data(df)
-    await message.answer('\n'.join(logs))
-    await message.answer('Главное меню', reply_markup=main_menu_kb)
+    @router.callback_query(lambda c: c.data == 'sync_posts')
+    async def sync_posts_callback(callback):
+        await callback.message.answer('Синхронизируем посты...')
+        df = get_as_dataframe(posts_text, evaluate_formulas=True).dropna(how='all')
+        df['user_id'] = df['user_id'].fillna(1)
+        logs = await db.update_posts_data(df)
+        await callback.message.answer('\n'.join(logs))
+        await callback.message.answer('Что-то еще?', reply_markup=sync_data_kb)
+
+    @router.callback_query(lambda c: c.data == 'sync_images')
+    async def sync_images_callback(callback):
+        await callback.message.answer('Синхронизируем картинки...')
+        df = get_as_dataframe(posts_images, evaluate_formulas=True).dropna(how='all')
+        logs = await db.update_images_data(df)
+        await callback.message.answer('\n'.join(logs))
+        await callback.message.answer('Что-то еще?', reply_markup=sync_data_kb)
+
+
+    @router.callback_query(lambda c: c.data == 'sync_questions')
+    async def sync_questions_callback(callback):
+        await callback.message.answer('Синхронизируем вопросы...')
+        df = get_as_dataframe(questions, evaluate_formulas=True).dropna(how='all')
+        logs = await db.update_questions_data(df)
+        await callback.message.answer('\n'.join(logs))
+        await callback.message.answer('Что-то еще?', reply_markup=sync_data_kb)
+
+
+    @router.callback_query(lambda c: c.data == 'sync_quizzes')
+    async def sync_quizzes_callback(callback):
+        await callback.message.answer('Синхронизируем квизы...')
+        df = get_as_dataframe(quizzes, evaluate_formulas=True).dropna(how='all')
+        logs = await db.update_quizzes_data(df)
+        await callback.message.answer('\n'.join(logs))
+        await callback.message.answer('Что-то еще?', reply_markup=sync_data_kb)
+
+
+    @router.callback_query(lambda c: c.data == 'sync_all')
+    async def sync_all_callback(callback):
+        df = get_as_dataframe(posts_text, evaluate_formulas=True).dropna(how='all')
+        df_images = get_as_dataframe(posts_images, evaluate_formulas=True).dropna(how='all')
+        df_quizzes = get_as_dataframe(quizzes, evaluate_formulas=True).dropna(how='all')
+        df_questions = get_as_dataframe(questions, evaluate_formulas=True).dropna(how='all')
+        df['user_id'] = df['user_id'].fillna(1)
+        logs = await db.update_posts_data(df)
+        logs.append('Переходим к синхронизации картинок...')
+        await message.answer('\n'.join(logs))
+        logs = await db.update_images_data(df_images)
+        logs.append('Переходим к синхронизации вопросов...')
+        await message.answer('\n'.join(logs))
+        logs = await db.update_questions_data(df_questions)
+        logs.append('Переходим к синхронизации квизов...')
+        await message.answer('\n'.join(logs))
+        logs = await db.update_quizzes_data(df_quizzes)
+        await message.answer('\n'.join(logs))
+        await message.answer(f'Синхронизация завершена! \n Главное меню', reply_markup=main_menu_kb)
+
+    @router.callback_query(lambda c: c.data == 'main_menu')
+    async def main_menu_callback(callback):
+        await callback.message.answer('Главное меню', reply_markup=main_menu_kb)

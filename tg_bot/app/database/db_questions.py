@@ -33,3 +33,27 @@ class QuestionsDatabase(DatabaseBase):
                 return False
 
             return "$question" + str(module) + "|" in answers
+        
+
+    async def update_questions_data(self, df):
+        logs = []
+        updated = 0
+        for i, row in df.iterrows():
+            try:
+                module = int(row['module'])
+                question = str(row['question'])
+            except Exception as e:
+                logs.append(f"Ошибка в строке: {i+1} — {e}. Полученные данные: \n\n{row} \n\nПереходим к следующей")
+                continue
+            db_question = await self.get_question_by_module(module)
+            if db_question != question:
+                logs.append(f"Обновляем вопрос в модуле {module}...")
+                try:
+                    await self.add_question(module, question)
+                except Exception as e:
+                    logs.append(f"Ошибка при обновлении вопроса в модуле {module}: {e}")
+                else:
+                    updated += 1
+        logs.append(f"Синхронизация вопросов завершена. Обновлено: {updated}")
+
+        return logs

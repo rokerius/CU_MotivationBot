@@ -90,3 +90,10 @@ def create_quiz_options_kb(quiz: dict) -> InlineKeyboardMarkup:
     inline_keyboard = [[button] for button in buttons]
 
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+sync_data_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Посты', callback_data='sync_posts'), InlineKeyboardButton(text='Картинки', callback_data='sync_images')],
+    [InlineKeyboardButton(text='Вопросы', callback_data='sync_questions'), InlineKeyboardButton(text='Квизы', callback_data='sync_quizzes')],
+    [InlineKeyboardButton(text='Все', callback_data='sync_all')], 
+    [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
+])

@@ -7,7 +7,7 @@ import re
 import logging
 
 logger = logging.getLogger(__name__)
-ADMINS = os.getenv("ADMINS").split()
+ADMINS = os.getenv("ADMINS", "").split()
 
 async def safe_delete_message(message):
     try:
