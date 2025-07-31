@@ -28,10 +28,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 async def create_credentials_file():
-
     credentials = {
         "type": "service_account",
-        "private_key": os.getenv("PRIVATE_KEY", "").replace("\\n", "\n"),
+        "private_key": os.getenv("PRIVATE_KEY").replace("\\n", "\n"),
         "private_key_id": os.getenv("PRIVATE_KEY_ID"),
         "client_email": os.getenv("CLIENT_EMAIL"),
         "client_id": os.getenv("CLIENT_ID"),
@@ -43,7 +42,7 @@ async def create_credentials_file():
         "project_id": os.getenv("PROJECT_ID")
     }
 
-    with open("credentials.json", "w", encoding="utf-8") as f:
+    with open('credentials.json', "w", encoding="utf-8") as f:
         json.dump(credentials, f, indent=2)
 
 

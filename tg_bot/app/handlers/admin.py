@@ -6,20 +6,20 @@ from aiogram.types import Message
 from aiogram.types.input_file import FSInputFile
 import gspread
 from gspread_dataframe import get_as_dataframe
+from dotenv import load_dotenv, find_dotenv
+import json
 
 from ..database.db import db
-from ..keyboards import main_menu_kb, sync_data_kb
+from ..keyboards import main_menu_kb, sync_data_kb, admin_kb
 from ..work_with_csv import dicts_to_csv
 from ..utils import *
 
 logger = logging.getLogger(__name__)
 
+load_dotenv(find_dotenv())
 router = Router()
 
-SHEET_NAME = "Учебные материалы"
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials.json')
-
+GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME")
 
 @router.message(Command("set_post"))
 async def add_post_handler(message: Message):
@@ -172,22 +172,25 @@ async def update_data_from_google_sheet(message: Message):
         return
     await message.answer("Получаю данные из гугл таблицы...")
     try:
-        gc = gspread.service_account(filename='credentials.json')
+        with open('credentials.json', 'r', encoding='utf-8') as f:
+            credentials = json.load(f)
+            print(credentials)
+        gc = gspread.service_account_from_dict(credentials)
     except Exception as e:
         await message.answer(f'Не удалось подключиться к гугл api \n Ошибка: {e}')
         return
     
     try:
-        posts_text = gc.open(SHEET_NAME).get_worksheet(0)
-        posts_images = gc.open(SHEET_NAME).get_worksheet(1)
-        questions = gc.open(SHEET_NAME).get_worksheet(2)
-        quizzes = gc.open(SHEET_NAME).get_worksheet(3)
+        posts_text = gc.open(GOOGLE_SHEET_NAME).get_worksheet(0)
+        posts_images = gc.open(GOOGLE_SHEET_NAME).get_worksheet(1)
+        questions = gc.open(GOOGLE_SHEET_NAME).get_worksheet(2)
+        quizzes = gc.open(GOOGLE_SHEET_NAME).get_worksheet(3)
     except Exception as e:
         await message.answer(
-            f'Ошибка при чтении таблиц. Возможно неправильное имя ({SHEET_NAME}) или нет одной из страниц \n Ошибка: {e}')
+            f'Ошибка при чтении таблиц. Возможно неправильное имя ({GOOGLE_SHEET_NAME}) или нет одной из страниц \n Ошибка: {e}')
         return
     await message.answer(
-        f'Таблица {SHEET_NAME} найдена. Выберите, что хотите синхронизировать:', 
+        f'Таблица {GOOGLE_SHEET_NAME} найдена. Выберите, что хотите синхронизировать:', 
         reply_markup=sync_data_kb)
 
     @router.callback_query(lambda c: c.data == 'sync_posts')
@@ -249,3 +252,53 @@ async def update_data_from_google_sheet(message: Message):
     @router.callback_query(lambda c: c.data == 'main_menu')
     async def main_menu_callback(callback):
         await callback.message.answer('Главное меню', reply_markup=main_menu_kb)
+
+
+@router.message(Command("admin"))
+async def admin_panel_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    
+    await message.answer(
+        "Админ-панель. Быстрый доступ к основным командам. \n\n Выберите команду",
+        reply_markup=admin_kb
+    )
+
+
+@router.message(Command("call_database"))
+async def call_database_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    await message.answer("Введите команду для выполнения")
+
+    @router.message(lambda m: m.text.startswith('SELECT'))
+    async def call_database_callback(message):
+        await message.answer(f"Выполняю запрос...")
+        try:
+            rows = await db.fetch(message.text)
+            result = []
+            for row in rows:
+                result.append(f"{'\n'.join([f'{k}: {v}' for k, v in row.items()])}")
+            for r in result:
+                await message.answer(r)
+        except Exception as e:
+            await message.answer(f"Ошибка при выполнении запроса: {e}", reply_markup=admin_kb)
+
+
+@router.message(Command("update_database"))
+async def update_database_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    await message.answer("Введите команду для выполнения")
+
+    @router.message(lambda m: m.text.startswith('UPDATE') or m.text.startswith('DELETE') or m.text.startswith('INSERT'))
+    async def update_database_callback(message):
+        await message.answer(f"Выполняю запрос...")
+        try:
+            result = await db.execute(message.text)
+            await message.answer(f"Запрос выполнен: {result}", reply_markup=admin_kb)
+        except Exception as e:
+            await message.answer(f"Ошибка при выполнении запроса: {e}", reply_markup=admin_kb)

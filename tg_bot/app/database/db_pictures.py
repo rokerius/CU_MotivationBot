@@ -42,7 +42,6 @@ class PicturesDatabase(DatabaseBase):
     async def update_images_data(self, df):
         logs = []
         await self.clear_post_images()
-        added = 0
         for i, row in df.iterrows():
             try:
                 module = int(row['module'])
@@ -61,8 +60,7 @@ class PicturesDatabase(DatabaseBase):
                 await self.add_image_to_post(post_id, image_url)
             except Exception as e:
                 logs.append(f"Ошибка при добавлении картинки к посту модуля {module} темы {theme}: {e}")
-            else:
-                added += 1
-        logs.append(f"Синхронизация картинок завершена. Добавлено: {added}")
+
+        logs.append(f"Синхронизация картинок завершена")
 
         return logs

@@ -36,6 +36,12 @@ class PostsDatabase(DatabaseBase):
                 return dict(row)
             return None
 
+    async def clear_posts(self):
+        async with self.pool.acquire() as conn:
+            await conn.execute('''
+                DELETE FROM posts
+            ''')
+
     async def get_all_posts(self):
         async with self.pool.acquire() as conn:
             rows = await conn.fetch('SELECT * FROM posts')
@@ -45,7 +51,8 @@ class PostsDatabase(DatabaseBase):
         logs = []
         db_posts = await self.get_all_posts()
         db_index = {(int(p['module']), int(p['theme'])): p for p in db_posts}
-        added, updated = 0, 0
+        added, updated, deleted = 0, 0, 0
+        df_keys = set()
         for i, row in df.iterrows():
             try:
                 user_id = int(row['user_id'])
@@ -57,6 +64,7 @@ class PostsDatabase(DatabaseBase):
                 logs.append(f"Ошибка в строке: {i+1} — {e}. Полученные данные: \n\n{row} \n\nПереходим к следующей")
                 continue
             key = (module, theme)
+            df_keys.add(key)
             db_post = db_index.get(key)
             if not db_post:
                 logs.append(f"Добавляем тему {theme} в модуль {module}...")
@@ -75,6 +83,19 @@ class PostsDatabase(DatabaseBase):
                         logs.append(f"Ошибка: {e}")
                     else:
                         updated += 1
-        logs.append(f"Синхронизация постов завершена. Добавлено: {added}, обновлено: {updated}")
+        # Удаляем посты, которых нет в df
+        db_keys = set(db_index.keys())
+        to_delete = db_keys - df_keys
+        if to_delete:
+            async with self.pool.acquire() as conn:
+                for module, theme in to_delete:
+                    logs.append(f"Удаляем тему {theme} в модуле {module}...")
+                    try:
+                        await conn.execute('DELETE FROM posts WHERE module = $1 AND theme = $2', module, theme)
+                    except Exception as e:
+                        logs.append(f"Ошибка при удалении темы {theme} в модуле {module}: {e}")
+                    else:
+                        deleted += 1
+        logs.append(f"Синхронизация постов завершена. Добавлено: {added}, обновлено: {updated}, удалено: {deleted}")
 
         return logs
