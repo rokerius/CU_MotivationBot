@@ -11,9 +11,15 @@ class QuestionsDatabase(DatabaseBase):
                 VALUES ($1, $2)
             ''', module, question)
 
+    async def clear_questions(self):
+        async with self.pool.acquire() as conn:
+            await conn.execute('''
+                DELETE FROM module_questions
+            ''')
+
     async def get_question_by_module(self, module: int):
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow('''
+            row = await conn.fetchrow('''   
                 SELECT question FROM module_questions
                 WHERE module = $1
                 LIMIT 1
@@ -36,8 +42,8 @@ class QuestionsDatabase(DatabaseBase):
         
 
     async def update_questions_data(self, df):
+        await self.clear_questions()
         logs = []
-        updated = 0
         for i, row in df.iterrows():
             try:
                 module = int(row['module'])
@@ -45,15 +51,10 @@ class QuestionsDatabase(DatabaseBase):
             except Exception as e:
                 logs.append(f"Ошибка в строке: {i+1} — {e}. Полученные данные: \n\n{row} \n\nПереходим к следующей")
                 continue
-            db_question = await self.get_question_by_module(module)
-            if db_question != question:
-                logs.append(f"Обновляем вопрос в модуле {module}...")
-                try:
-                    await self.add_question(module, question)
-                except Exception as e:
-                    logs.append(f"Ошибка при обновлении вопроса в модуле {module}: {e}")
-                else:
-                    updated += 1
-        logs.append(f"Синхронизация вопросов завершена. Обновлено: {updated}")
+            try:
+                await self.add_question(module, question)
+            except Exception as e:
+                logs.append(f"Ошибка при обновлении вопроса в модуле {module}: {e}")
+        logs.append(f"Синхронизация вопросов завершена.")
 
         return logs

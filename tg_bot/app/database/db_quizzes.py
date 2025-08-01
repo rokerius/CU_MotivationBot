@@ -65,7 +65,6 @@ class QuizzesDatabase(DatabaseBase):
     async def update_quizzes_data(self, df):
         await self.clear_quizzes()
         logs = []
-        added = 0
         for i, row in df.iterrows():
             try:
                 module = int(row['module'])
@@ -84,9 +83,7 @@ class QuizzesDatabase(DatabaseBase):
                 await self.add_quiz(module, question, option_1, option_2, option_3, option_4, option_5, correct_answer, description)
             except Exception as e:
                 logs.append(f"Ошибка при добавлении квиза в модуле {module}: {e}")
-            else:
-                added += 1
 
-        logs.append(f"Синхронизация квизов завершена. Всего добавлено: {added}")
+        logs.append(f"Синхронизация квизов завершена.")
 
         return logs

@@ -78,7 +78,16 @@ class DatabaseBase(ABC):
 
     async def execute(self, query: str):
         async with self.pool.acquire() as conn:
-            return await conn.execute(query)
+            try:
+                await conn.execute(query)
+                return True
+            except Exception as e:
+                return f"Ошибка при выполнении запроса: {e}"
+        
+    async def fetch(self, query: str):
+        async with self.pool.acquire() as conn:
+            result = await conn.fetch(query)
+            return [dict(row) for row in result]
 
     @abstractmethod
     async def add_user(self, user_id: int, username: str):
