@@ -83,7 +83,7 @@ def create_quiz_options_kb(quiz: dict) -> InlineKeyboardMarkup:
         quiz.get('option_4'),
         quiz.get('option_5'),
     ]
-    options = [opt for opt in options if opt]
+    options = [opt for opt in options if (opt and opt != "nan")]
 
     buttons = [InlineKeyboardButton(text=opt, callback_data=f"quiz_answer:{opt}") for opt in options]
 
