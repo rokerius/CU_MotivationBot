@@ -184,7 +184,7 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
 
     feedback_msg = await callback_query.message.answer(feedback)
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(6)
     await safe_delete_message(feedback_msg)
 
     index += 1
