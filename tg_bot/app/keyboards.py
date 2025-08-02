@@ -5,7 +5,7 @@ from .database.db import db
 
 main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Модули', callback_data='modules_menu')],
-    [InlineKeyboardButton(text='Ревью', callback_data='review_menu')],
+    [InlineKeyboardButton(text='Письмо к себе', callback_data='review_menu')],
     [InlineKeyboardButton(text='Помощь', callback_data='help_menu')],
 ])
 
@@ -98,13 +98,25 @@ sync_data_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
 ])
 
+report_problem_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Технические вопросы', callback_data='report_technical_problem')],
+    [InlineKeyboardButton(text='Проблема с работой бота', callback_data='report_bot_problem')],
+    [InlineKeyboardButton(text='Проблема содержанием поста', callback_data='report_posts_problem')],
+    [InlineKeyboardButton(text='Проблема с квизами', callback_data='report_quizzes_problem')],
+    [InlineKeyboardButton(text='Проблема с вопросами', callback_data='report_questions_problem')],
+    [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
+])
+
+back_to_report_problem_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Назад', callback_data='help_menu')]
+])
+
 admin_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="/set_post"), KeyboardButton(text="/set_image")],
         [KeyboardButton(text="/set_question"), KeyboardButton(text="/get_stat")],
-        [KeyboardButton(text="/update_data"), KeyboardButton(text="/call_database")],
-        [KeyboardButton(text="/update_database")],
-        [KeyboardButton(text="Главное меню")],
+        [KeyboardButton(text="/update_data")],
+        [KeyboardButton(text="/start")],
     ],
     resize_keyboard=True
 )
