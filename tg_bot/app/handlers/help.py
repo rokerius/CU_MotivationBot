@@ -43,7 +43,7 @@ async def report_problem(message: AlbumMessage):
         for admin_id in admin_ids:
             await bot.send_message(admin_id, f'Пользователь @{message.from_user.username} сообщил о проблеме:')
             await bot.send_media_group(admin_id, media=media)
-        await bot.send_message(chat_id, 'Спасибо.',
+        await bot.send_message(chat_id, f'Спасибо за сообщение! \nМы уже заметили эту проблему и работаем над её устранением. Скоро пофиксим❤',
                         reply_markup=back_to_main_menu_kb)
     else:
         await asyncio.sleep(10)
@@ -67,7 +67,7 @@ async def report_problem(message: Message, state: FSMContext):
     await bot.delete_message(message.chat.id, bot_message_id)
     await state.clear()
 
-    await message.answer('Спасибо за ваше сообщение! Мы постараемся решить проблему как можно скорее.',
+    await message.answer(f'Спасибо за сообщение! \nМы уже заметили эту проблему и работаем над её устранением. Скоро пофиксим❤',
                         reply_markup=back_to_main_menu_kb)
 
     admin_ids = os.getenv('ADMIN_IDS').split()
