@@ -18,7 +18,9 @@ async def main_menu(callback_query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda c: c.data == 'help_menu')
 async def help_menu(callback_query: CallbackQuery, state: FSMContext):
-    bot_message = await callback_query.message.edit_text('Напишите что не так',
+    bot_message = await callback_query.message.edit_text('''
+Напиши, что пошло не так: нашёл ошибку, баг или есть вопрос по курсу. 
+Приложи скриншоты, так мы быстрее разберёмся и поможем тебе.''',
                                                          reply_markup=back_to_main_menu_kb)
     await state.update_data(bot_message_id=bot_message.message_id)
     await state.set_state(Help.report_problem)
