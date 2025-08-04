@@ -27,11 +27,6 @@ async def start(message: Message):
     await message.answer("Главное меню", reply_markup=main_menu_kb)
 
 
-@router.message(Command('help'))
-async def help(message: Message):
-    logger.info(f"User {message.from_user.id} asking for help")
-    await message.message.edit_text('По техническим вопросам пишите Денису: @rokerius',
-                                           reply_markup=back_to_main_menu_kb)
 
 @router.message(Command('reset_my_data'))
 async def reset(message: Message):

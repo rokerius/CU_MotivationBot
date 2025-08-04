@@ -35,7 +35,8 @@ async def show_post_with_images(message: types.Message, module: int, theme: int,
             caption = content
 
     async with db.pool.acquire() as conn:
-        rows = await conn.fetch('SELECT image_url, file_id FROM post_images WHERE post_id = $1', post['id'])
+        rows = await conn.fetch('SELECT image_url, file_id FROM post_images WHERE post_id = $1 ORDER BY id ASC',
+                                post['id'])
     if not rows:
         await message.answer(caption, parse_mode="HTML")
         return

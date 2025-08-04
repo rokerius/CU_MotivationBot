@@ -59,16 +59,15 @@ async def main():
         dp.include_router(router)
 
     try:
-        await import_csv_to_posts_db(db, 'data/posts.csv')
-        await import_csv_to_pictures_db(db, 'data/pictures.csv')
-        await import_csv_to_questions_db(db, 'data/questions.csv')
-        await import_csv_to_quizzes_db(db, 'data/quizzes.csv')
-        logger.info("Data from tables successfully imported")
+        # await import_csv_to_posts_db(db, 'data/posts.csv')
+        # await import_csv_to_pictures_db(db, 'data/pictures.csv')
+        # await import_csv_to_questions_db(db, 'data/questions.csv')
+        # await import_csv_to_quizzes_db(db, 'data/quizzes.csv')
+        # logger.info("Data from tables successfully imported")
         await dp.start_polling(bot)
     finally:
         await db.disconnect()
         logger.info("Disconnecting from the database and shutting down")
-
 
 
 if __name__ == '__main__':
