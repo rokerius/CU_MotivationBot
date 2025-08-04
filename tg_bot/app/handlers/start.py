@@ -22,3 +22,12 @@ async def help(message: Message):
     logger.info(f"User {message.from_user.id} asking for help")
     await message.message.edit_text('По техническим вопросам пишите Денису: @rokerius',
                                            reply_markup=back_to_main_menu_kb)
+
+@router.message(Command('reset_my_data'))
+async def reset(message: Message):
+    logger.info(f"User {message.from_user.id} reset his data")
+    user = message.from_user
+    async with db.pool.acquire() as conn:
+        await conn.execute("DELETE FROM users WHERE id = $1", user.id)
+    await message.answer('Данные о текущем пользователе удалены')
+    await db.add_user(user.id, user.username)
