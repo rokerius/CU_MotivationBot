@@ -1,8 +1,7 @@
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
-import asyncio
-
+from aiogram.types import CallbackQuery, Message, InlineKeyboardButton, InlineKeyboardMarkup
+import os
 from ..keyboards import *
 from ..database.db import db
 from ..utils import *
@@ -58,7 +57,7 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
                 if not first_quiz_done:
                     all_done = False
                     kb = create_quiz_options_kb(first_quiz)
-                    await callback_query.message.answer(first_quiz['question'], reply_markup=kb)
+                    await callback_query.message.answer(first_quiz['question'], parse_mode="HTML", reply_markup=kb)
                     await state.set_state(StateModule.answering_quizzes)
                     break
 
@@ -66,7 +65,7 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
             question = await db.get_question_by_module(current_module)
             question_done = await db.check_questions_done(int(callback_query.from_user.id), current_module)
             if question and not question_done:
-                await callback_query.message.answer(question)
+                await callback_query.message.answer(question, parse_mode="HTML")
                 await state.set_state(StateModule.waiting_for_answer)
             elif question_done:
                 await db.change_modules_done(callback_query.from_user.id, current_module, "1")
@@ -89,7 +88,6 @@ async def next_theme_handler(callback_query: CallbackQuery, state: FSMContext):
     await safe_delete_message(callback_query.message)
 
 
-
 @router.callback_query(lambda c: c.data == 'next_module')
 async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     gotten_data = await state.get_data()
@@ -103,7 +101,7 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
 
     await state.update_data(current_theme=1)
     await state.update_data(current_module=next_module)
-    await callback_query.message.answer(modules_description[next_module])
+    await callback_query.message.answer(modules_description[next_module], parse_mode="HTML")
 
     post = await db.get_post_by_module_and_theme(next_module, 1)
     if post:
@@ -146,7 +144,7 @@ async def handle_quiz_answer(message: Message, state: FSMContext):
     if index < len(quizzes):
         next_quiz = quizzes[index]
         kb = create_quiz_options_kb(next_quiz)
-        await message.answer(next_quiz['question'], reply_markup=kb)
+        await message.answer(next_quiz['question'], parse_mode="HTML", reply_markup=kb)
         await state.update_data(quiz_index=index)
 
     else:
@@ -181,23 +179,50 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
 
     await safe_delete_message(callback_query.message)
 
+    # Отправляем фидбек
+    feedback_msg = await callback_query.message.answer(feedback, parse_mode="HTML")
 
-    feedback_msg = await callback_query.message.answer(feedback)
+    # Отправляем сообщение с кнопкой "Далее"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Далее", callback_data="next_quiz")]
+    ])
+    await callback_query.message.answer("Нажми 'Далее', чтобы продолжить", reply_markup=kb)
 
-    await asyncio.sleep(2)
-    await safe_delete_message(feedback_msg)
+    # Можно сохранить ID сообщения с фидбеком, если понадобится его удалить позже
+    await state.update_data(last_feedback_message_id=feedback_msg.message_id)
 
-    index += 1
+
+@router.callback_query(lambda c: c.data == 'next_quiz')
+async def next_quiz_handler(callback_query: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    quizzes = data.get('quizzes', [])
+    index = data.get('quiz_index', 0) + 1  # Переходим к следующему вопросу
+    current_module = data.get('current_module')
+
+    # Удаляем сообщение с кнопкой "Далее" чтобы очистить чат
+    try:
+        await callback_query.message.delete()
+    except Exception:
+        pass
+
+    # Если нужно, можно удалить сообщение с прошлым фидбеком тоже:
+    last_feedback_message_id = data.get('last_feedback_message_id')
+    if last_feedback_message_id:
+        try:
+            await callback_query.message.chat.delete_message(last_feedback_message_id)
+        except Exception:
+            pass
+
     if index < len(quizzes):
         next_quiz = quizzes[index]
         kb = create_quiz_options_kb(next_quiz)
-        await callback_query.message.answer(next_quiz['question'], reply_markup=kb)
+        await callback_query.message.answer(next_quiz['question'], parse_mode="HTML", reply_markup=kb)
         await state.update_data(quiz_index=index)
     else:
         question = await db.get_question_by_module(current_module)
-        question_done = await db.check_questions_done(int(callback_query.from_user.id), current_module)
+        question_done = await db.check_questions_done(callback_query.from_user.id, current_module)
         if question and not question_done:
-            await callback_query.message.answer(question)
+            await callback_query.message.answer(question, parse_mode="HTML")
             await state.set_state(StateModule.waiting_for_answer)
         elif question_done:
             await callback_query.message.answer(
@@ -217,6 +242,8 @@ async def quiz_answer_callback_handler(callback_query: CallbackQuery, state: FSM
         await db.change_modules_done(callback_query.from_user.id, current_module, "1")
         await state.update_data(quizzes=None, quiz_index=None)
 
+    await safe_delete_message(callback_query.message)
+
 
 async def end(callback_query: CallbackQuery, state: FSMContext):
     answers = await db.get_answers(callback_query.from_user.id)
@@ -226,7 +253,7 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     message_text = ""
     for q in questions:
         title = await db.get_question_by_module(int(q['module']))
-        message_text += f"❓ <b>{title}</b>\n"
+        message_text += f"❓ <b>{title[:30].strip()}...</b>\n"
         message_text += f"💡 {q['answer']}\n\n"
     await callback_query.message.answer(
         message_text.strip(),
@@ -235,4 +262,4 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     await state.clear()
 
     kb = await get_review_kb(callback_query.from_user.id)
-    await callback_query.message.answer('*текст почему нужно ревью в конце*', reply_markup=kb)
+    await callback_query.message.answer('Напиши себе будущему. Это может быть всё, что угодно: напутствие, слова поддержки, напоминание, шутка или мотивирующая цитата. Через полтора месяца бот отправит тебе сообщение', reply_markup=kb)

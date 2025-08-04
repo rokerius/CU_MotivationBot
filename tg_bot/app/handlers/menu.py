@@ -27,12 +27,12 @@ async def help_menu(callback_query: CallbackQuery, state: FSMContext):
 async def modules_menu(callback_query: CallbackQuery):
     user = callback_query.from_user
     kb = await get_modules_keyboard(user.id)
-    if (callback_query.message.text != 'Выберите интересующий модуль или идите по порядку)' or
+    if (callback_query.message.text != 'Следуй по порядку и возвращайся к пройденному' or
             callback_query.message.reply_markup != kb):
-        await callback_query.message.edit_text('Выберите интересующий модуль или идите по порядку)', reply_markup=kb)
+        await callback_query.message.edit_text('Следуй по порядку и возвращайся к пройденному', reply_markup=kb)
 
 
 @router.callback_query(lambda c: c.data == 'review_menu')
 async def review_menu(callback_query: CallbackQuery):
     kb = await get_review_kb(callback_query.from_user.id)
-    await callback_query.message.edit_text('Письмо к себе', reply_markup=kb)
+    await callback_query.message.edit_text('Напиши себе будущему. Это может быть всё что угодно: напутствие, слова поддержки, напоминание, шутка или мотивирующая цитата. Через полтора месяца бот отправит тебе сообщение', reply_markup=kb)

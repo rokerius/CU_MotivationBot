@@ -5,8 +5,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types.input_file import FSInputFile
 import gspread
-from gspread_dataframe import get_as_dataframe
-from dotenv import load_dotenv, find_dotenv
+from gspread_dataframe import get_as_dataframe 
 import json
 
 from ..database.db import db
@@ -16,10 +15,8 @@ from ..utils import *
 
 logger = logging.getLogger(__name__)
 
-load_dotenv(find_dotenv())
-router = Router()
-
 GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME")
+router = Router()
 
 @router.message(Command("set_post"))
 async def add_post_handler(message: Message):
@@ -251,7 +248,7 @@ async def update_data_from_google_sheet(message: Message):
 
     @router.callback_query(lambda c: c.data == 'main_menu')
     async def main_menu_callback(callback):
-        await callback.message.edit_text('Главное меню', reply_markup=main_menu_kb)
+        await callback.message.answer('Главное меню', reply_markup=main_menu_kb)
 
 
 @router.message(Command("admin"))
