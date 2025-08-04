@@ -14,11 +14,6 @@ router = Router()
 @router.message(Command('start'))
 async def start(message: Message):
     user = message.from_user
-    await db.add_user(user.id, user.username)
-    logger.info(f"New user: ({user.id}, {user.username}, {user.first_name} {user.last_name})")
-
-    # Подставляем username, если он есть, иначе имя пользователя (first_name)
-    username = user.username if user.username else user.first_name
     welcome_text = (
         f"Привет, {user.first_name}! Вперёд осваивать навык учиться.\n\n"
         "→ Начни с первого модуля и продолжай последовательно читать посты,\n"
@@ -27,7 +22,10 @@ async def start(message: Message):
         "Если что-то не так, попробуй перезагрузить бота командой /start в сообщениях. "
         "Не помогло? Напиши нам в поддержку через кнопку «Помощь». Мы на связи ;)"
     )
-    await message.answer(welcome_text, reply_markup=main_menu_kb)
+    await db.add_user(user.id, user.username)
+    logger.info(f"New user: ({user.id}, {user.username}, {user.first_name} {user.last_name})")
+    await message.answer(welcome_text)
+    await message.answer("Главное меню", reply_markup=main_menu_kb)
 
 
 @router.message(Command('help'))

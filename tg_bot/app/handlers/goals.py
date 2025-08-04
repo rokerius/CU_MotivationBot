@@ -17,7 +17,7 @@ router = Router()
 @router.callback_query(lambda c: c.data == 'add_goals')
 async def add_goals(callback_query: CallbackQuery, state: FSMContext):
     await state.set_state(Review.add_goals)
-    bot_message = await callback_query.message.edit_text('Напиши письмо себе',
+    bot_message = await callback_query.message.edit_text('Напиши письмо себе:',
                                                          reply_markup=back_to_review_menu_kb)
     await state.update_data(bot_message_id=bot_message.message_id)
 
