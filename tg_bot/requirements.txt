@@ -1,0 +1,7 @@
+aiogram
+asyncpg
+gspread
+gspread-dataframe
+pandas
+python-dotenv
+aiogram_album
