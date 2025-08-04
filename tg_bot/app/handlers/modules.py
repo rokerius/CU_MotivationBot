@@ -262,4 +262,4 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     await state.clear()
 
     kb = await get_review_kb(callback_query.from_user.id)
-    await callback_query.message.answer('*текст почему нужно ревью в конце*', reply_markup=kb)
+    await callback_query.message.answer('Напиши себе будущему. Это может быть всё, что угодно: напутствие, слова поддержки, напоминание, шутка или мотивирующая цитата. Через полтора месяца бот отправит тебе сообщение', reply_markup=kb)

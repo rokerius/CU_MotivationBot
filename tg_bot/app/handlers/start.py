@@ -10,12 +10,25 @@ from ..utils import is_admin
 logger = logging.getLogger(__name__)
 router = Router()
 
+
 @router.message(Command('start'))
 async def start(message: Message):
     user = message.from_user
     await db.add_user(user.id, user.username)
     logger.info(f"New user: ({user.id}, {user.username}, {user.first_name} {user.last_name})")
-    await message.answer('Привет!', reply_markup=main_menu_kb)
+
+    # Подставляем username, если он есть, иначе имя пользователя (first_name)
+    username = user.username if user.username else user.first_name
+    welcome_text = (
+        f"Привет, {user.first_name}! Вперёд осваивать навык учиться.\n\n"
+        "→ Начни с первого модуля и продолжай последовательно читать посты,\n"
+        "→ Через меню можешь вернуться к нужному модулю,\n"
+        "→ Проходи квизы и формируй инсайты через вопросы\n\n"
+        "Если что-то не так, попробуй перезагрузить бота командой /start в сообщениях. "
+        "Не помогло? Напиши нам в поддержку через кнопку «Помощь». Мы на связи ;)"
+    )
+    await message.answer(welcome_text, reply_markup=main_menu_kb)
+
 
 @router.message(Command('help'))
 async def help(message: Message):

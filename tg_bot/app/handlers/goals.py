@@ -17,7 +17,7 @@ router = Router()
 @router.callback_query(lambda c: c.data == 'add_goals')
 async def add_goals(callback_query: CallbackQuery, state: FSMContext):
     await state.set_state(Review.add_goals)
-    bot_message = await callback_query.message.edit_text('Введите цели на семестр',
+    bot_message = await callback_query.message.edit_text('Напиши письмо себе',
                                                          reply_markup=back_to_review_menu_kb)
     await state.update_data(bot_message_id=bot_message.message_id)
 
@@ -33,12 +33,12 @@ async def add_goals(message: Message, state: FSMContext):
     await message.delete()
     kb = await get_review_kb(message.from_user.id)
     logger.info(f"Setting goals for user {message.from_user.id}: {message.text}")
-    await message.answer('Цели на семестр добавлены!', reply_markup=kb)
+    await message.answer('Письмо отправлено!', reply_markup=kb)
 
 
 @router.callback_query(lambda c: c.data == 'view_goals')
 async def view_goals(callback_query: CallbackQuery, state: FSMContext):
     user = await db.get_user_by_id(callback_query.from_user.id)
     goals = user['goals']
-    await callback_query.message.edit_text(f'Твои цели на семестр: \n \n {goals}',
+    await callback_query.message.edit_text(f'Твое письмо: \n \n {goals}',
                                            reply_markup=back_to_review_menu_kb)
