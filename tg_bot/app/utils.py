@@ -7,7 +7,7 @@ import re
 import logging
 
 logger = logging.getLogger(__name__)
-ADMINS = os.getenv("ADMINS").split()
+ADMINS = os.getenv("ADMINS", "").split()
 
 async def safe_delete_message(message):
     try:
@@ -27,7 +27,13 @@ async def show_post_with_images(message: types.Message, module: int, theme: int,
 
     title = post.get('title', '').strip()
     content = post.get('content', '').replace('\\n', '\n').strip()
-    caption = f"<b>{title}</b>\n\n{content}" if (title or content) else "Пост не содержит текста"
+    caption = f"<b>{title}</b>\n\n{content}"
+    if not title or title == "nan":
+        if not content or content == "nan":
+            caption = ""
+        else:
+            caption = content
+
     async with db.pool.acquire() as conn:
         rows = await conn.fetch('SELECT image_url, file_id FROM post_images WHERE post_id = $1', post['id'])
     if not rows:

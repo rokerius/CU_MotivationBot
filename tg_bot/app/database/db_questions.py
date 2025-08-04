@@ -11,9 +11,15 @@ class QuestionsDatabase(DatabaseBase):
                 VALUES ($1, $2)
             ''', module, question)
 
+    async def clear_questions(self):
+        async with self.pool.acquire() as conn:
+            await conn.execute('''
+                DELETE FROM module_questions
+            ''')
+
     async def get_question_by_module(self, module: int):
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow('''
+            row = await conn.fetchrow('''   
                 SELECT question FROM module_questions
                 WHERE module = $1
                 LIMIT 1
@@ -33,3 +39,22 @@ class QuestionsDatabase(DatabaseBase):
                 return False
 
             return "$question" + str(module) + "|" in answers
+        
+
+    async def update_questions_data(self, df):
+        await self.clear_questions()
+        logs = []
+        for i, row in df.iterrows():
+            try:
+                module = int(row['module'])
+                question = str(row['question'])
+            except Exception as e:
+                logs.append(f"Ошибка в строке: {i+1} — {e}. Полученные данные: \n\n{row} \n\nПереходим к следующей")
+                continue
+            try:
+                await self.add_question(module, question)
+            except Exception as e:
+                logs.append(f"Ошибка при обновлении вопроса в модуле {module}: {e}")
+        logs.append(f"Синхронизация вопросов завершена.")
+
+        return logs

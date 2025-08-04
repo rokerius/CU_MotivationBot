@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from .database.db import db
 
@@ -23,7 +23,6 @@ async def get_modules_keyboard(id):
         '5. Методы обучения',
         '6. Страх ошибок',
         '7. Команда',
-        '8. Рефлексия'
     ]
 
     keyboard = []
@@ -83,10 +82,28 @@ def create_quiz_options_kb(quiz: dict) -> InlineKeyboardMarkup:
         quiz.get('option_4'),
         quiz.get('option_5'),
     ]
-    options = [opt for opt in options if opt]
+    options = [opt for opt in options if (opt and opt != "nan")]
 
     buttons = [InlineKeyboardButton(text=opt, callback_data=f"quiz_answer:{opt}") for opt in options]
 
     inline_keyboard = [[button] for button in buttons]
 
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+sync_data_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Посты', callback_data='sync_posts'), InlineKeyboardButton(text='Картинки', callback_data='sync_images')],
+    [InlineKeyboardButton(text='Вопросы', callback_data='sync_questions'), InlineKeyboardButton(text='Квизы', callback_data='sync_quizzes')],
+    [InlineKeyboardButton(text='Все', callback_data='sync_all')], 
+    [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
+])
+
+admin_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="/set_post"), KeyboardButton(text="/set_image")],
+        [KeyboardButton(text="/set_question"), KeyboardButton(text="/get_stat")],
+        [KeyboardButton(text="/update_data"), KeyboardButton(text="/call_database")],
+        [KeyboardButton(text="/update_database")],
+        [KeyboardButton(text="Главное меню")],
+    ],
+    resize_keyboard=True
+)
