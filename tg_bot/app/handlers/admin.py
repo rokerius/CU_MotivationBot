@@ -5,8 +5,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types.input_file import FSInputFile
 import gspread
-from gspread_dataframe import get_as_dataframe
-from dotenv import load_dotenv, find_dotenv
+from gspread_dataframe import get_as_dataframe 
 import json
 
 from ..database.db import db
@@ -16,10 +15,8 @@ from ..utils import *
 
 logger = logging.getLogger(__name__)
 
-load_dotenv(find_dotenv())
-router = Router()
-
 GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME")
+router = Router()
 
 @router.message(Command("set_post"))
 async def add_post_handler(message: Message):
@@ -238,16 +235,16 @@ async def update_data_from_google_sheet(message: Message):
         df['user_id'] = df['user_id'].fillna(1)
         logs = await db.update_posts_data(df)
         logs.append('Переходим к синхронизации картинок...')
-        await message.answer('\n'.join(logs))
+        await callback.message.answer('\n'.join(logs))
         logs = await db.update_images_data(df_images)
         logs.append('Переходим к синхронизации вопросов...')
-        await message.answer('\n'.join(logs))
+        await callback.message.answer('\n'.join(logs))
         logs = await db.update_questions_data(df_questions)
         logs.append('Переходим к синхронизации квизов...')
-        await message.answer('\n'.join(logs))
+        await callback.message.answer('\n'.join(logs))
         logs = await db.update_quizzes_data(df_quizzes)
-        await message.answer('\n'.join(logs))
-        await message.answer(f'Синхронизация завершена! \n Главное меню', reply_markup=main_menu_kb)
+        await callback.message.answer('\n'.join(logs))
+        await callback.message.answer(f'Синхронизация завершена! \n Главное меню', reply_markup=main_menu_kb)
 
     @router.callback_query(lambda c: c.data == 'main_menu')
     async def main_menu_callback(callback):

@@ -3,7 +3,9 @@ from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 import logging
 
-from ..keyboards import main_menu_kb, back_to_main_menu_kb, get_modules_keyboard, get_review_kb
+from ..keyboards import main_menu_kb, get_modules_keyboard, \
+    get_review_kb, back_to_main_menu_kb
+from .states import Help
 
 router = Router()
 
@@ -16,10 +18,10 @@ async def main_menu(callback_query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda c: c.data == 'help_menu')
 async def help_menu(callback_query: CallbackQuery, state: FSMContext):
-    logger.info(f"User {callback_query.from_user.id} asking for help")
-    await callback_query.message.edit_text('По техническим вопросам пишите Денису: @rokerius',
-                                           reply_markup=back_to_main_menu_kb)
-    await state.clear()
+    bot_message = await callback_query.message.edit_text('Напишите что не так',
+                                                         reply_markup=back_to_main_menu_kb)
+    await state.update_data(bot_message_id=bot_message.message_id)
+    await state.set_state(Help.report_problem)
 
 @router.callback_query(lambda c: c.data == 'modules_menu')
 async def modules_menu(callback_query: CallbackQuery):

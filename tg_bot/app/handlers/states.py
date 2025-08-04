@@ -8,3 +8,6 @@ class StateModule(StatesGroup):
 
 class Review(StatesGroup):
     add_goals = State()
+
+class Help(StatesGroup):
+    report_problem = State()

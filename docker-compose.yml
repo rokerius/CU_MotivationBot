@@ -13,6 +13,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - ADMINS=${ADMINS}
+      - ADMIN_IDS=${ADMIN_IDS}
       - PRIVATE_KEY=${PRIVATE_KEY}
       - PRIVATE_KEY_ID=${PRIVATE_KEY_ID}
       - CLIENT_EMAIL=${CLIENT_EMAIL}

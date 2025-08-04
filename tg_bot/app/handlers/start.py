@@ -5,7 +5,6 @@ import logging
 
 from ..database.db import db
 from ..keyboards import main_menu_kb, back_to_main_menu_kb
-from ..utils import is_admin
 
 logger = logging.getLogger(__name__)
 router = Router()
