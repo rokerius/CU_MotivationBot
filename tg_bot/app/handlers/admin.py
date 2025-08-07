@@ -107,6 +107,9 @@ async def add_question_handler(message: Message):
 
 @router.message(Command("get_stat"))
 async def get_stat_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
     await message.answer("Собираю данные и формирую CSV-файлы...")
 
     users = await db.get_all_users()

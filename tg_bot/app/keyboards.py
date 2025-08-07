@@ -4,7 +4,7 @@ from .database.db import db
 
 
 main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Меню', callback_data='modules_menu')],
+    [InlineKeyboardButton(text='Модули', callback_data='modules_menu')],
     [InlineKeyboardButton(text='Письмо к себе', callback_data='review_menu')],
     [InlineKeyboardButton(text='Помощь', callback_data='help_menu')],
 ])
@@ -37,13 +37,13 @@ async def get_modules_keyboard(id):
 
 theme_kb = InlineKeyboardMarkup(inline_keyboard=[
     [
-        InlineKeyboardButton(text='Меню', callback_data='modules_menu'),
+        InlineKeyboardButton(text='Модули', callback_data='modules_menu'),
         InlineKeyboardButton(text='Далее', callback_data='next_theme')
     ]
 ])
 
 module_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Меню', callback_data='modules_menu')],
+    [InlineKeyboardButton(text='Все модули курса', callback_data='modules_menu')],
     [InlineKeyboardButton(text='Следующий модуль!', callback_data='next_module')]
 ])
 
