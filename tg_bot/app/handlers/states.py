@@ -16,3 +16,4 @@ class AdminStates(StatesGroup):
     send_message_to_users = State()
     update_database = State()
     call_database = State()
+    send_letters = State()
