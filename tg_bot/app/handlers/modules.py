@@ -1,7 +1,7 @@
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, InlineKeyboardButton, InlineKeyboardMarkup
-import os
+
 from ..keyboards import *
 from ..database.db import db
 from ..utils import *
@@ -9,8 +9,15 @@ from .states import StateModule
 
 router = Router()
 
-csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'descriptions.csv')
-modules_description = read_modules_description_from_csv(csv_path)
+modules_description = [
+    'Модуль 1. ВУЗ VS Школа',
+    'Модуль 2. Поставь цель',
+    'Модуль 3. Управляй временем',
+    'Модуль 4. Контроль мотивации',
+    'Модуль 5. Без страха ошибок',
+    'Модуль 6. Работай в команде',
+    'Модуль 7. Расти через рефлексию'
+]
 
 
 @router.callback_query(lambda c: c.data in ['module_' + str(i) for i in range(1, 9)])
@@ -18,7 +25,7 @@ async def choosing_module(callback_query: CallbackQuery, state: FSMContext):
     selected_module = int(callback_query.data.split('_')[-1])
     await state.update_data(current_module=selected_module)
     await state.update_data(current_theme=1)
-    await callback_query.message.answer(modules_description[selected_module])
+    await callback_query.message.answer(modules_description[selected_module-1])
 
     post = await db.get_post_by_module_and_theme(selected_module, 1)
     if post:
@@ -94,14 +101,14 @@ async def next_module_handler(callback_query: CallbackQuery, state: FSMContext):
     current_module = gotten_data.get('current_module')
     next_module = current_module + 1
 
-    if next_module > max(modules_description.keys()):
+    if next_module > len(modules_description):
         await safe_delete_message(callback_query.message)
         await end(callback_query, state)
         return
 
     await state.update_data(current_theme=1)
     await state.update_data(current_module=next_module)
-    await callback_query.message.answer(modules_description[next_module], parse_mode="HTML")
+    await callback_query.message.answer(modules_description[next_module-1], parse_mode="HTML")
 
     post = await db.get_post_by_module_and_theme(next_module, 1)
     if post:
@@ -261,5 +268,5 @@ async def end(callback_query: CallbackQuery, state: FSMContext):
     )
     await state.clear()
 
-    kb = await get_review_kb(callback_query.from_user.id)
+    kb = await get_letter_kb(callback_query.from_user.id)
     await callback_query.message.answer('Напиши себе будущему. Это может быть всё, что угодно: напутствие, слова поддержки, напоминание, шутка или мотивирующая цитата. Через полтора месяца бот отправит тебе сообщение', reply_markup=kb)

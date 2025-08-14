@@ -17,7 +17,7 @@ router = Router()
 first_photo = True
 first = True
 media = []
-@router.message(lambda message: message.media_group_id is not None)
+@router.message(Help.report_problem, lambda message: message.media_group_id is not None)
 async def report_problem(message: AlbumMessage):
     admin_ids = os.getenv('ADMIN_IDS').split()
     global first

@@ -5,7 +5,7 @@ from .database.db import db
 
 main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Модули', callback_data='modules_menu')],
-    [InlineKeyboardButton(text='Письмо к себе', callback_data='review_menu')],
+    [InlineKeyboardButton(text='Письмо к себе', callback_data='letter_menu')],
     [InlineKeyboardButton(text='Помощь', callback_data='help_menu')],
 ])
 
@@ -48,26 +48,26 @@ module_kb = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 
-async def get_review_kb(id):
+async def get_letter_kb(id):
     user = await db.get_user_by_id(id)
     if not user:
         return None
-    goals = user['goals']
-    if not goals:
+    letter = user['letter']
+    if not letter:
          kb = [
-            [InlineKeyboardButton(text='Написать письмо себе', callback_data='add_goals')],
+            [InlineKeyboardButton(text='Написать письмо себе', callback_data='add_letter')],
             [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
         ]
     else:
         kb = [
-            [InlineKeyboardButton(text='Переписать письмо', callback_data='add_goals')],
-            [InlineKeyboardButton(text='Посмотреть свое письмо', callback_data='view_goals')],
+            [InlineKeyboardButton(text='Переписать письмо', callback_data='add_letter')],
+            [InlineKeyboardButton(text='Посмотреть свое письмо', callback_data='view_letter')],
             [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
         ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-back_to_review_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Назад', callback_data='review_menu')]
+back_to_letter_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Назад', callback_data='letter_menu')]
 ])
 
 back_to_main_menu_kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -97,25 +97,18 @@ sync_data_kb = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
 ])
 
-report_problem_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Технические вопросы', callback_data='report_technical_problem')],
-    [InlineKeyboardButton(text='Проблема с работой бота', callback_data='report_bot_problem')],
-    [InlineKeyboardButton(text='Проблема содержанием поста', callback_data='report_posts_problem')],
-    [InlineKeyboardButton(text='Проблема с квизами', callback_data='report_quizzes_problem')],
-    [InlineKeyboardButton(text='Проблема с вопросами', callback_data='report_questions_problem')],
-    [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
-])
-
-back_to_report_problem_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Назад', callback_data='help_menu')]
-])
-
 admin_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="/set_post"), KeyboardButton(text="/set_image")],
-        [KeyboardButton(text="/set_question"), KeyboardButton(text="/get_stat")],
         [KeyboardButton(text="/update_data")],
+        [KeyboardButton(text="/get_stat")],
+        [KeyboardButton(text="/send_message_to_users")],
+        [KeyboardButton(text="/send_letters")],
         [KeyboardButton(text="/start")],
     ],
     resize_keyboard=True
 )
+
+apply_sending_letters_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Да, отправить', callback_data='send_letters')],
+    [InlineKeyboardButton(text='Нет, обратно в меню', callback_data='main_menu')]
+])

@@ -3,8 +3,8 @@ from aiogram.types import InputMediaPhoto
 from aiogram.exceptions import TelegramBadRequest
 import os
 import csv
-import re
 import logging
+import tempfile
 
 logger = logging.getLogger(__name__)
 ADMINS = os.getenv("ADMINS", "").split()
@@ -69,26 +69,23 @@ async def show_post_with_images(message: types.Message, module: int, theme: int,
             await db.save_file_id_for_post_image(rows[i]["image_url"], file_id)
 
 
-def read_modules_description_from_csv(file_path):
-    modules_description = {}
-    with open(file_path, mode='r', encoding='utf-8') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            if not row or row[0] == "id":
-                continue
-            key = int(row[0].strip())
-            value = row[1].strip()
-            modules_description[key] = value
-    return modules_description
-
-def convert_drive_url(url: str) -> str:
-    pattern = r"https://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/view(?:\?.*)?"
-    match = re.match(pattern, url)
-    if match:
-        file_id = match.group(1)
-        return f"https://docs.google.com/uc?id={file_id}"
-    return url
-
-
 def is_admin(username: str) -> bool:
     return username in ADMINS
+
+async def dicts_to_csv(dict_list, filename_telegram):
+    tmp_path = None
+    try:
+        tmp_file = tempfile.NamedTemporaryFile(mode='w+', newline='', suffix='.csv', delete=False, encoding='utf-8')
+        tmp_path = tmp_file.name
+
+        writer = csv.DictWriter(tmp_file, fieldnames=list(dict_list[0].keys()))
+        writer.writeheader()
+        writer.writerows(dict_list)
+        tmp_file.close()
+
+        return tmp_path, filename_telegram
+    except Exception as e:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise e
+

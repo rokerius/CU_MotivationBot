@@ -6,8 +6,13 @@ class StateModule(StatesGroup):
     waiting_for_answer = State()
     answering_quizzes = State()
 
-class Review(StatesGroup):
-    add_goals = State()
+class Letter(StatesGroup):
+    add_letter = State()
 
 class Help(StatesGroup):
     report_problem = State()
+
+class AdminStates(StatesGroup):
+    send_message_to_users = State()
+    update_database = State()
+    call_database = State()

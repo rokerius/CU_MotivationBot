@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 import logging
 
 from ..keyboards import main_menu_kb, get_modules_keyboard, \
-    get_review_kb, back_to_main_menu_kb
+    get_letter_kb, back_to_main_menu_kb
 from .states import Help
 
 router = Router()
@@ -34,7 +34,7 @@ async def modules_menu(callback_query: CallbackQuery):
         await callback_query.message.edit_text('Следуй по порядку и возвращайся к пройденному', reply_markup=kb)
 
 
-@router.callback_query(lambda c: c.data == 'review_menu')
-async def review_menu(callback_query: CallbackQuery):
-    kb = await get_review_kb(callback_query.from_user.id)
+@router.callback_query(lambda c: c.data == 'letter_menu')
+async def letter_menu(callback_query: CallbackQuery):
+    kb = await get_letter_kb(callback_query.from_user.id)
     await callback_query.message.edit_text('Напиши себе будущему. Это может быть всё что угодно: напутствие, слова поддержки, напоминание, шутка или мотивирующая цитата. Через полтора месяца бот отправит тебе сообщение', reply_markup=kb)

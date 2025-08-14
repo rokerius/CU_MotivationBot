@@ -27,3 +27,11 @@ class UtilsDatabase(DatabaseBase):
         async with self.pool.acquire() as conn:
             rows = await conn.fetch('SELECT * FROM quizzes')
             return [dict(row) for row in rows]
+        
+    async def update_all_data(self, df_posts, df_post_images, df_module_questions, df_quizzes):
+        logs = []
+        logs.extend(await self.update_posts_data(df_posts))
+        logs.extend(await self.update_images_data(df_post_images))
+        logs.extend(await self.update_questions_data(df_module_questions))
+        logs.extend(await self.update_quizzes_data(df_quizzes))
+        return logs

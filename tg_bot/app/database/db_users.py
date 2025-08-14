@@ -19,9 +19,9 @@ class UsersDatabase(DatabaseBase):
                 return dict(row)
             return None
 
-    async def add_goals(self, user_id: int, goals: str):
+    async def add_letter(self, user_id: int, letter: str):
         async with self.pool.acquire() as conn:
-            await conn.execute('UPDATE users SET goals = $1 WHERE id = $2', goals, user_id)
+            await conn.execute('UPDATE users SET letter = $1 WHERE id = $2', letter, user_id)
 
     async def change_modules_done(self, user_id: int, module: int, value: str):
         async with self.pool.acquire() as conn:

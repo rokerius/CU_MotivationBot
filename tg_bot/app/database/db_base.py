@@ -25,7 +25,7 @@ class DatabaseBase(ABC):
                     last_name TEXT,
                     modules TEXT,
                     answers TEXT,
-                    goals TEXT,
+                    letter TEXT,
                     created_at TIMESTAMP DEFAULT now()
                 );
             ''')
@@ -110,7 +110,7 @@ class DatabaseBase(ABC):
         pass
 
     @abstractmethod
-    async def add_goals(self, user_id: int, goals: str):
+    async def add_letter(self, user_id: int, letter: str):
         pass
 
     @abstractmethod
