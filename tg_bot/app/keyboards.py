@@ -112,10 +112,16 @@ back_to_report_problem_kb = InlineKeyboardMarkup(inline_keyboard=[
 
 admin_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="/set_post"), KeyboardButton(text="/set_image")],
-        [KeyboardButton(text="/set_question"), KeyboardButton(text="/get_stat")],
         [KeyboardButton(text="/update_data")],
+        [KeyboardButton(text="/get_stat")],
+        [KeyboardButton(text="/send_message_to_users")],
+        [KeyboardButton(text="/send_letters")],
         [KeyboardButton(text="/start")],
     ],
     resize_keyboard=True
 )
+
+apply_sending_letters_kb = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Да, отправить', callback_data='send_letters')],
+    [InlineKeyboardButton(text='Нет, обратно в меню', callback_data='main_menu')]
+])

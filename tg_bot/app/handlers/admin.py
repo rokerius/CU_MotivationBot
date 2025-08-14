@@ -1,6 +1,6 @@
 import logging
 import os
-from aiogram import Router
+from aiogram import Router, Bot
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.types.input_file import FSInputFile
@@ -12,8 +12,11 @@ from ..database.db import db
 from ..keyboards import main_menu_kb, sync_data_kb, admin_kb
 from ..work_with_csv import dicts_to_csv
 from ..utils import *
+from .states import AdminStates
+from ..keyboards import apply_sending_letters_kb
 
 logger = logging.getLogger(__name__)
+bot = Bot(token=os.getenv('TOKEN'))
 
 GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME")
 router = Router()
@@ -267,17 +270,21 @@ async def admin_panel_handler(message: Message):
 
 
 @router.message(Command("call_database"))
-async def call_database_handler(message: Message):
+async def call_database_handler(message: Message, state):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
         return
     await message.answer("Введите команду для выполнения")
+    await state.set_state(AdminStates.call_database)
 
-    @router.message(lambda m: m.text.startswith('SELECT'))
-    async def call_database_callback(message):
+    @router.message(AdminStates.call_database, lambda m: m.text.startswith('SELECT'))
+    async def call_database_callback(message, state):
         await message.answer(f"Выполняю запрос...")
         try:
             rows = await db.fetch(message.text)
+            if len(rows) > 20:
+                await message.answer("Слишком много результатов, выведем только первые 20")
+                rows = rows[:20]
             result = []
             for row in rows:
                 result.append(f"{'\n'.join([f'{k}: {v}' for k, v in row.items()])}")
@@ -285,20 +292,73 @@ async def call_database_handler(message: Message):
                 await message.answer(r)
         except Exception as e:
             await message.answer(f"Ошибка при выполнении запроса: {e}", reply_markup=admin_kb)
-
+    
 
 @router.message(Command("update_database"))
-async def update_database_handler(message: Message):
+async def update_database_handler(message: Message, state):
     if not is_admin(message.from_user.username):
         await message.answer("Недостаточно прав 🤬")
         return
     await message.answer("Введите команду для выполнения")
+    await state.set_state(AdminStates.update_database)
 
-    @router.message(lambda m: m.text.startswith('UPDATE') or m.text.startswith('DELETE') or m.text.startswith('INSERT'))
-    async def update_database_callback(message):
+    @router.message(AdminStates.update_database, lambda m: m.text.startswith('UPDATE') or m.text.startswith('DELETE') or m.text.startswith('INSERT'))
+    async def update_database_callback(message, state):
         await message.answer(f"Выполняю запрос...")
         try:
             result = await db.execute(message.text)
             await message.answer(f"Запрос выполнен: {result}", reply_markup=admin_kb)
         except Exception as e:
             await message.answer(f"Ошибка при выполнении запроса: {e}", reply_markup=admin_kb)
+        await state.clear()
+
+
+@router.message(Command("send_message_to_users"))
+async def send_message_to_users_handler(message: Message, state):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    await state.set_state(AdminStates.send_message_to_users)
+    await message.answer("Введите сообщение для отправки пользователям")
+
+    @router.message(AdminStates.send_message_to_users)
+    async def send_message_to_users_callback(message, state):
+        if not is_admin(message.from_user.username):
+            await message.answer("Недостаточно прав 🤬")
+            return
+        await message.answer(f"Выполняю запрос...")
+        try:
+            users = await db.get_all_users()
+            for user in users:
+                await bot.send_message(user['id'], message.text, parse_mode='HTML')
+        except Exception as e:
+            await message.answer(f"Ошибка при отправке сообщения: {e}", reply_markup=admin_kb)
+        await state.clear()
+        await message.answer('Сообщение отправлено!', reply_markup=main_menu_kb)
+
+
+@router.message(Command("send_letters"))
+async def send_letters_handler(message: Message):
+    if not is_admin(message.from_user.username):
+        await message.answer("Недостаточно прав 🤬")
+        return
+    await message.answer("Точно хотите отправить письма всем пользователям?", reply_markup=apply_sending_letters_kb)
+
+    @router.callback_query(lambda c: c.data == 'send_letters')
+    async def send_letters_callback(callback, state):
+        await callback.message.answer("Введите текст перед письмом")
+        await state.set_state(AdminStates.send_letters)
+
+        @router.message(AdminStates.send_letters)
+        async def send_letters_callback(message, state):
+            users = await db.get_all_users()
+            try:
+                for user in users:
+                    if not user['goals']:
+                        continue
+                    text = f"{message.text}\n\n{user['goals']}"
+                    await bot.send_message(user['id'], text, parse_mode='HTML')
+            except Exception as e:
+                await callback.message.answer(f"Ошибка при отправке писем: {e}")
+            await callback.message.answer('Письма отправлены!', reply_markup=main_menu_kb)
+            await state.clear()
