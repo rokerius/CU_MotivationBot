@@ -16,14 +16,13 @@ async def get_modules_keyboard(id):
     modules_code = user['modules']
 
     module_names = [
-        '1. Формат и роли',
-        '2. Цели',
-        '3. Тайм-менеджмент',
-        '4. Мотивация',
-        '5. Методы обучения',
-        '6. Страх ошибок',
-        '7. Команда',
-        '8. Рефлексия'
+        '1. ВУЗ VS Школа',
+        '2. Поставить и достичь цель',
+        '3. Управляй временем',
+        '4. Контроль мотивации',
+        '5. Без страха ошибок',
+        '6. Работай в команде',
+        '7. Расти через рефлексию',
     ]
 
     keyboard = []
@@ -38,13 +37,13 @@ async def get_modules_keyboard(id):
 
 theme_kb = InlineKeyboardMarkup(inline_keyboard=[
     [
-        InlineKeyboardButton(text='Меню', callback_data='modules_menu'),
+        InlineKeyboardButton(text='Модули', callback_data='modules_menu'),
         InlineKeyboardButton(text='Далее', callback_data='next_theme')
     ]
 ])
 
 module_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='Меню', callback_data='modules_menu')],
+    [InlineKeyboardButton(text='Все модули курса', callback_data='modules_menu')],
     [InlineKeyboardButton(text='Следующий модуль!', callback_data='next_module')]
 ])
 
@@ -56,13 +55,13 @@ async def get_review_kb(id):
     goals = user['goals']
     if not goals:
          kb = [
-            [InlineKeyboardButton(text='Добавить цели на семестр', callback_data='add_goals')],
+            [InlineKeyboardButton(text='Написать письмо себе', callback_data='add_goals')],
             [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
         ]
     else:
         kb = [
-            [InlineKeyboardButton(text='Изменить цели на семестр', callback_data='add_goals')],
-            [InlineKeyboardButton(text='Посмотреть свои цели', callback_data='view_goals')],
+            [InlineKeyboardButton(text='Переписать письмо', callback_data='add_goals')],
+            [InlineKeyboardButton(text='Посмотреть свое письмо', callback_data='view_goals')],
             [InlineKeyboardButton(text='Главное меню', callback_data='main_menu')]
         ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
@@ -83,7 +82,7 @@ def create_quiz_options_kb(quiz: dict) -> InlineKeyboardMarkup:
         quiz.get('option_4'),
         quiz.get('option_5'),
     ]
-    options = [opt for opt in options if opt]
+    options = [str(opt) for opt in options if (opt and opt != "nan")]
 
     buttons = [InlineKeyboardButton(text=opt, callback_data=f"quiz_answer:{opt}") for opt in options]
 

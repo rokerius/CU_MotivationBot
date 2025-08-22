@@ -71,9 +71,9 @@ class QuizzesDatabase(DatabaseBase):
                 question = str(row['question'])
                 option_1 = str(row['option_1'])
                 option_2 = str(row['option_2'])
-                option_3 = str(row['option_3']) if row['option_3'] != '' else None
-                option_4 = str(row['option_4']) if row['option_4'] != '' else None
-                option_5 = str(row['option_5']) if row['option_5'] != '' else None
+                option_3 = str(row['option_3']) if row['option_3'] != '' and row['option_3'] != 'nan' else None
+                option_4 = str(row['option_4']) if row['option_4'] != '' and row['option_3'] != 'nan' else None
+                option_5 = str(row['option_5']) if row['option_5'] != '' and row['option_3'] != 'nan' else None
                 correct_answer = str(row['correct_answer']) if row['correct_answer'] != '' else None
                 description = str(row['description']) if row['description'] != '' else None
             except Exception as e:
